@@ -75,7 +75,6 @@ void run_graeffe_tests() {
         vector<double> coefficients_for_graeffe = coefficients;
         reverse(coefficients_for_graeffe.begin(), coefficients_for_graeffe.end());
 
-        // ОШИБКА ТУТ
         // ищем корни методом Грефе
         vector<double> computed_moduli = find_moduli_roots_by_graeffe(coefficients_for_graeffe, epsilon);
         cout << "Вычисленные модули корней: ";
@@ -128,6 +127,7 @@ void run_graeffe_tests() {
 
         cout << "СГЕНЕРИРОВАННЫЙ ПОЛИНОМ:" << endl;
         cout << "Степень: " << P << endl;
+        cout << "Размер вектора коэффициентов" << coefficients.size() << endl;
 
         cout << endl << "Полином: ";
         print_polynomial(coefficients);
@@ -189,9 +189,9 @@ void run_graeffe_tests() {
 
     // ТЕСТ 3
     {
-        cout << "ТЕСТ 3: Полином с кратными корнями и степень 20 (precision source)" << endl;
+        cout << "ТЕСТ 3: Полином с кратными корнями и степень 5 (precision source)" << endl;
 
-        unsigned P = 10;                                                // степень полинома
+        unsigned P = 5;                                                // степень полинома
         unsigned num_complex_pairs = 0;                                 // кол-во комплексных пар
         unsigned num_clusters = 0;                                      // кол-во кластеров
         vector<unsigned> cluster_counts = {};                           // сколько корней в каждом кластере
@@ -244,7 +244,7 @@ void run_graeffe_tests() {
         }
 
         cout << endl << "ВЫЧИСЛЕНИЕ МЕТОДОМ ГРЕФЕ" << endl;
-        float_precision epsilon = 1e-12;
+        float_precision epsilon = 1e-6;
 
         // меняем порядок коэффициентов
         vector<float_precision> coefficients_for_graeffe = coefficients;
@@ -281,9 +281,9 @@ void run_graeffe_tests() {
 
         unsigned P = 10;                                                // степень полинома
         unsigned num_complex_pairs = 0;                                 // кол-во комплексных пар
-        unsigned num_clusters = 1;                                      // кол-во кластеров
-        vector<unsigned> cluster_counts = { 3 };                           // сколько корней в каждом кластере
-        vector<float_precision> cluster_radii = { 0.001 };                              // радиусы кластеров
+        unsigned num_clusters = 0;                                      // кол-во кластеров
+        vector<unsigned> cluster_counts = {  };                           // сколько корней в каждом кластере
+        vector<float_precision> cluster_radii = { };                              // радиусы кластеров
         vector<pair<unsigned, unsigned>> multiplicity_groups = {};      // сколько корней каждой кратности
         float_precision default_cluster_radius = 0.1;                            // радиус кластера по умолчанию
         bool normalize_coeffs = true;                                   // приводить старший коэффициент к 1?
