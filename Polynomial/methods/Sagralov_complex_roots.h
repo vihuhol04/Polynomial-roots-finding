@@ -1,435 +1,516 @@
-﻿// Метод Сагралова для изоляции вещественных корней
-// Теория: Шишигина Алина, КМБО-01-22
-// Реализация: Павлова Анастасия, КМБО-01-22
+﻿// Метод Сагралова CIsolate для изоляции комплексных корней
+// Реализация согласно теории (раздел 2.2)
 
 #pragma once
 
-#include "mathUtils.h"
-#include "polynomialUtils.h"
-#include "Helper_for_all_methods.h"
-
-#include <queue>
+#include <cmath>
+#include <vector>
+#include <complex>
 #include <optional>
-#include <cassert>
+#include <algorithm>
 
-// Приближённая реализация CIsolate (Сагралова) — тест Пелле + Graeffe + Newton/Bisection
-// Работает на long double + std::complex<long double>
-// Ограничение: предполагает простые корни внутри B и 2B (как в теории).
+#include "Sagralov_detail.h"
+#include "mathUtils.h"
 
-// Вынесли, чтоб код был более читаемым
-template<typename T>
+template <typename T>
 using cplx = std::complex<T>;
 
-template<typename T>
-struct Disk {
+template <typename T>
+struct Disk
+{
     cplx<T> center;
     T radius;
-    Disk() : center(0, 0), radius(0) {}
-    Disk(cplx<T> c, T r) : center(c), radius(r) {}
+    int num_roots;
+
+    Disk() : center(0, 0), radius(0), num_roots(0) {}
+    Disk(cplx<T> c, T r, int k = 0) : center(c), radius(r), num_roots(k) {}
 };
 
-namespace detail {
+template <typename T>
+struct Component
+{
+    std::vector<cplx<T>> squares;
+    T halfw;
+    Disk<T> disk;
+    int N_C; // 2^(2*n_C)
+    int n_C;
 
-    // Вычисление значения многочлена с комплексными коэффициентами в точке z (метод Горнера)
-    template<typename T>
-    cplx<T> eval_poly(const std::vector<cplx<T>>& a, const cplx<T>& z) {
-        cplx<T> res = cplx<T>(0, 0);
-        for (size_t i = 0; i < a.size(); ++i) {
-            res = res * z + a[i];
+    Component() : halfw(0), N_C(4), n_C(1) {}
+};
+
+// Тест Пелле после N итераций Грефа
+// Согласно теории: проверяем условие НА КАЖДОЙ итерации (п.2 алгоритма TG)
+template <typename T>
+int T_G(const std::vector<cplx<T>>& a, const cplx<T>& m, T r)
+{
+    int n = (int)a.size() - 1;
+    if (n < 1)
+        return 0;
+
+    // Вычисление N = ⌈log(1+log n+5)⌉
+    T n_val = T(max_val(2, n));
+    T log_n = log_val(n_val);
+    T inner = T(1) + log_n + T(5);
+    T log_inner = log_val(inner);
+    T log2_inner = log_inner / log_val(T(2));
+    int N = (int)ceil_val(log2_inner);
+    N = max_val(1, min_val(N, 12));
+
+    auto c = detail_sagralov::build_Fdelta(a, m, r);
+
+    // Выполняем N итераций Грефа, проверяя условие Пелле после каждой
+    for (int iter = 0; iter <= N; ++iter)
+    {
+        std::vector<T> mag(c.size());
+        T sum = T(0);
+        for (size_t i = 0; i < c.size(); ++i)
+        {
+            mag[i] = abs_val(c[i]);
+            sum += mag[i];
         }
-        return res;
-    }
 
-    // Вычисление многочлена с вещественными коэффициентами (переведёнными в комплексные) в точке z
-    template<typename T>
-    cplx<T> eval_poly_real(const std::vector<T>& a_real, const cplx<T>& z) {
-        std::vector<cplx<T>> a;
-        a.reserve(a_real.size());
-        for (auto v : a_real) a.emplace_back(v, 0);
-        return eval_poly(a, z);
-    }
+        // Проверка условия Пелле: |c_k| > sum_{i != k} |c_i|
+        // Тест Пелле: |c_k| > K * sum_{i≠k}|c_i|, где K≥1
+        // Используем K=1.01 для надёжности при численных ошибках
+        const T K = T(1.01);
+        for (size_t k = 0; k < mag.size(); ++k)
+            if (mag[k] > K * (sum - mag[k]))
+                return (int)k;
 
-    // Вычисление коэффициентов k-й производной многочлена.
-    // Вход: коэффициенты a_0 ... a_n, представляющие многочлен a_0 x^n + a_1 x^{n-1} + ... + a_n
-    // Возвращает коэффициенты F^{(k)} в том же формате (степень уменьшается на k).
-    template<typename T>
-    std::vector<cplx<T>> derivative_coeffs(const std::vector<cplx<T>>& a, int k) {
-        int n = (int)a.size() - 1;
-        if (k == 0) return a;
-        if (k > n) return std::vector<cplx<T>>(1, cplx<T>(0, 0));
-        std::vector<cplx<T>> cur = a;
-        for (int iter = 0; iter < k; ++iter) {
-            int m = (int)cur.size() - 1;
-            std::vector<cplx<T>> next(m);
-            for (int i = 0; i < m; ++i) {
-                // cur[i] соответствует коэффициенту при x^{m-i}
-                next[i] = cur[i] * cplx<T>((T)(m - i), 0);
+        // Следующая итерация Грефа
+        if (iter < N)
+        {
+            c = detail_sagralov::graeffe_iteration(c);
+
+            // Масштабирование степенями двойки
+            // Находим максимальный коэффициент и нормализуем все коэффициенты
+            T max_mag = T(0);
+            for (const auto& z : c)
+            {
+                max_mag = max_val(max_mag, abs_val(z));
             }
-            cur.swap(next);
-        }
-        return cur;
-    }
 
-    // Факториал для небольших k
-    inline long double fact_ld(int k) {
-        static std::vector<long double> f = { 1.0L };
-        while ((int)f.size() <= k) f.push_back(f.back() * (long double)f.size());
-        return f[k];
-    }
+            if (max_mag > T(0) && isfinite_val(max_mag))
+            {
+                // Делим все коэффициенты на max_mag для нормализации
+                // Приводим максимальный к диапазону [0.5, 1) делением на степени 2
+                T scale = T(1);
+                T normalized = max_mag;
 
-    // Построение коэффициентов c_i для F_delta(x) = F(m + r x):
-    // c_i = F^{(i)}(m) / i! * r^i
-    // Вход: коэффициенты многочлена a (a[0]..a[n], где a[0] при x^n).
-    template<typename T>
-    std::vector<cplx<T>> build_Fdelta_coeffs(const std::vector<cplx<T>>& a, const cplx<T>& m, T r) {
-        int n = (int)a.size() - 1;
-        std::vector<cplx<T>> c(n + 1);
-        for (int i = 0; i <= n; ++i) {
-            // вычисляем i-ю производную в точке m
-            std::vector<cplx<T>> der = derivative_coeffs(a, i);
-            cplx<T> val = eval_poly(der, m);
-            long double denom = fact_ld(i);
-            c[i] = val / (denom)*std::pow(r, (long double)i);
-        }
-        return c;
-    }
+                // Приводим к диапазону [0.5, 1) умножением/делением на 2
+                while (normalized > T(1))
+                {
+                    normalized /= T(2);
+                    scale *= T(2);
+                }
+                while (normalized <= T(0.5) && normalized > T(0))
+                {
+                    normalized *= T(2);
+                    scale /= T(2);
+                }
 
-    // Разбиение квадрата на 4 подквадрата.
-    // Квадрат задаётся центром и полуразмером h.
-    // Возвращает центры подквадратов и новый полуразмер h/2.
-    template<typename T>
-    std::vector<std::pair<cplx<T>, T>> subdivide_square(const cplx<T>& center, T halfw) {
-        std::vector<std::pair<cplx<T>, T>> out;
-        T h2 = halfw / 2;
-        // смещения: (-h2, -h2), (h2, -h2), (-h2, h2), (h2, h2)
-        out.emplace_back(cplx<T>(center.real() - h2, center.imag() - h2), h2);
-        out.emplace_back(cplx<T>(center.real() + h2, center.imag() - h2), h2);
-        out.emplace_back(cplx<T>(center.real() - h2, center.imag() + h2), h2);
-        out.emplace_back(cplx<T>(center.real() + h2, center.imag() + h2), h2);
-        return out;
-    }
-
-    // Итерация Греффе для комплексных коэффициентов:
-    // Реализует F^{[1]}(x) = (-1)^n (F_e(x)^2 - x F_o(x)^2)
-    // Вход: коэффициенты a[0..n] (a[0] при x^n), возвращает преобразованный многочлен
-    template<typename T>
-    std::vector<cplx<T>> graeffe_one_iter(const std::vector<cplx<T>>& a) {
-        int n = (int)a.size() - 1;
-
-        // Строим чётную и нечётную части относительно убывающих степеней
-        std::vector<cplx<T>> a_even, a_odd;
-        for (int i = 0; i <= n; ++i) {
-            if ((i % 2) == 0) a_even.push_back(a[i]);
-            else a_odd.push_back(a[i]);
-        }
-
-        // Возведение в квадрат (свёртка)
-        auto square_poly = [&](const std::vector<cplx<T>>& p) {
-            int deg = (int)p.size() - 1;
-            int deg_result = 2 * deg;
-            std::vector<cplx<T>> res(deg_result + 1, cplx<T>(0, 0));
-            for (int i = 0; i <= deg; ++i)
-                for (int j = 0; j <= deg; ++j)
-                    res[i + j] += p[i] * p[j];
-            return res;
-            };
-
-        auto sq_even = square_poly(a_even);
-        auto sq_odd = square_poly(a_odd);
-
-        // Строим многочлены Fe и Fo в полном формате
-        int deg_full = n;
-        std::vector<cplx<T>> Fe_full(deg_full + 1, cplx<T>(0, 0));
-        std::vector<cplx<T>> Fo_full(deg_full + 1, cplx<T>(0, 0));
-        for (int i = 0; i <= n; ++i) {
-            int power = n - i;
-            if ((power % 2) == 0) Fe_full[i] = a[i];
-            else Fo_full[i] = a[i];
-        }
-
-        auto poly_square_full = [&](const std::vector<cplx<T>>& p_full) {
-            int degp = (int)p_full.size() - 1;
-            std::vector<cplx<T>> res(2 * degp + 1, cplx<T>(0, 0));
-            for (int i = 0; i <= degp; ++i) {
-                for (int j = 0; j <= degp; ++j) {
-                    res[i + j] += p_full[i] * p_full[j];
+                // Масштабируем все коэффициенты
+                if (scale != T(1))
+                {
+                    for (auto& z : c)
+                    {
+                        z /= scale;
+                    }
                 }
             }
-            return res;
-            };
-
-        auto Fe2 = poly_square_full(Fe_full);
-        auto Fo2 = poly_square_full(Fo_full);
-
-        // Вычисляем Fe2 - x*Fo2
-        int deg_res = 2 * deg_full;
-        std::vector<cplx<T>> res(deg_res + 1, cplx<T>(0, 0));
-        for (int k = 0; k <= deg_res; ++k) {
-            cplx<T> fe = (k < (int)Fe2.size() ? Fe2[k] : cplx<T>(0, 0));
-            cplx<T> fo_shift = (k >= 1 && (k - 1) < (int)Fo2.size() ? Fo2[k - 1] : cplx<T>(0, 0));
-            res[k] = fe - fo_shift;
         }
-
-        // Умножаем на (-1)^n
-        if ((n % 2) != 0) {
-            for (auto& x : res) x = -x;
-        }
-        return res;
     }
 
-    // После итерации Греффе степень удваивается. 
-    // Для теста Пелле нужны только модули коэффициентов → возвращаем как есть.
-} // namespace detail
+    return -1;
+}
 
-// Тест T_G: возвращает k ∈ {0..n}, если найдено, иначе -1
-// Параметры:
-//  - a : коэффициенты многочлена как комплексные числа (a[0] при x^n ... a[n])
-//  - m : центр диска
-//  - r : радиус
-//  - maxGraeffeIter : число итераций (по умолчанию вычисляется из n)
-//  - K : пороговый коэффициент (в Пелле K>=1, здесь K=1 по умолчанию)
-template<typename T>
-int T_G(const std::vector<cplx<T>>& a, const cplx<T>& m, T r, int maxGraeffeIter = -1, T K = 1.0L) {
+// Адаптивный тест T* с переменным числом итераций Греффе
+// При неудаче базового T_G постепенно увеличиваем N
+template <typename T>
+int T_star(const std::vector<cplx<T>>& a, const cplx<T>& m, T r)
+{
     int n = (int)a.size() - 1;
-    if (n < 1) return 0;
-    if (maxGraeffeIter < 0) {
-        // N = floor(log2(1 + log n)) + 5  приблизительный размер с натуральными логарифмами
-        long double ln = std::log(std::max(1.0, (double)n));
-        int N = (int)std::floor(std::log2(1.0L + std::log((long double)n))) + 5;
-        if (N < 1) N = 1;
-        maxGraeffeIter = N;
-    }
+    if (n < 1)
+        return 0;
 
-    // Строим коэффициенты F_delta c_i = F^{(i)}(m)/i! * r^i
-    auto c = detail::build_Fdelta_coeffs(a, m, r); // длина вектора n+1 комплекс
+    // Базовое значение N согласно теории
+    int N_base = (int)std::ceil(std::log2(1.0L + std::log((long double)max_val(2, n)) + 5.0L));
+    N_base = max_val(1, N_base);
 
-    // Работаем с vector<cplx<T>>
-    std::vector<cplx<T>> current = c;
+    // Пытаемся с возрастающим N (имитация переменной точности)
+    for (int N = N_base; N <= min_val(N_base + 6, 18); ++N)
+    {
+        auto c = detail_sagralov::build_Fdelta(a, m, r);
 
-    for (int iter = 0; iter <= maxGraeffeIter; ++iter) {
-        // Проверяем состояние Пелле: для каждого k проверить |c_k| > k * sum_{i != k} |c_i|
-        std::vector<long double> mags(current.size());
-        long double total = 0;
-        for (size_t i = 0; i < current.size(); ++i) {
-            mags[i] = std::abs(current[i]);
-            total += mags[i];
-        }
-        for (size_t k = 0; k < mags.size(); ++k) {
-            long double others = total - mags[k];
-            if (mags[k] > (long double)K * others) {
-                // Пелле указывает ровно на k корней внутри единичного диска (преобразованного многочлена)
-                return (int)k;
+        // Выполняем N итераций Греффе с проверкой Пелле после каждой
+        for (int iter = 0; iter <= N; ++iter)
+        {
+            std::vector<T> mag(c.size());
+            T sum = T(0);
+            for (size_t i = 0; i < c.size(); ++i)
+            {
+                mag[i] = abs_val(c[i]);
+                sum += mag[i];
+            }
+
+            // Тест Пелле: |c_k| > K * sum_{i≠k}|c_i|
+            const T K = T(1.01);
+            for (size_t k = 0; k < mag.size(); ++k)
+                if (mag[k] > K * (sum - mag[k]))
+                    return (int)k;
+
+            // Следующая итерация Греффе с нормализацией
+            if (iter < N)
+            {
+                c = detail_sagralov::graeffe_iteration(c);
+
+                // Численно стабильная нормализация степенями двойки
+                T max_mag = T(0);
+                for (const auto& z : c)
+                    max_mag = max_val(max_mag, abs_val(z));
+
+                if (max_mag > T(0) && isfinite_val(max_mag))
+                {
+                    T scale_factor = T(1) / max_mag;
+                    for (auto& z : c)
+                        z *= scale_factor;
+                }
             }
         }
-
-        if (iter == maxGraeffeIter) break;
-        // выполняем одну итерацию Грефа для текущего (комплексного полинома)
-        current = detail::graeffe_one_iter(current);
-        // Необязательно нормализовать, чтобы избежать overflow/underflow: масштабировать по максимальной величине
-        long double maxm = 0;
-        for (auto& z : current) maxm = std::max(maxm, (long double)std::abs(z));
-        if (maxm > 0) {
-            long double scale = std::pow(10.0L, std::floor(std::log10(maxm)));
-            if (std::isfinite(scale) && scale != 0.0L) {
-                for (auto& z : current) z /= scale;
-            }
-        }
     }
+
+    // Все попытки исчерпаны - возвращаем -1 (неопределённость)
     return -1;
 }
 
-// Тест T_star: обёртка над T_G с подбором параметров для повышения надёжности
-// Возвращает k ≥ 0, если диск содержит ровно k корней, иначе -1
-template<typename T>
-int T_star(const std::vector<cplx<T>>& a, const cplx<T>& m, T r, long double base_eps = 1e-12L) {
-    // Попробуем несколько комбинаций: увеличиваем количество итераций Грефа, немного ослабляем порог K и т.д.
-    int try_iters[] = { 1, 3, 5, 8, 12 };
-    long double tryKs[] = { 1.0L, 1.0L, 1.2L, 1.5L };
-    for (int Ni = 0; Ni < (int)(sizeof(try_iters) / sizeof(int)); ++Ni) {
-        for (int Ki = 0; Ki < (int)(sizeof(tryKs) / sizeof(long double)); ++Ki) {
-            int k = T_G(a, m, r, try_iters[Ni], (T)tryKs[Ki]);
-            if (k >= 0) return k;
-        }
-    }
-    // сдаемся и возвращаем -1
-    return -1;
-}
+// Метод Ньютона-Шрёдера для кластеров
+template <typename T>
+std::optional<Disk<T>> NewtonTest(const std::vector<cplx<T>>& a, const Disk<T>& D, int N_C)
+{
+    if (D.num_roots <= 0)
+        return std::nullopt;
 
-// NewtonTest: попытка сузить компоненту с центром centerC и полуразмером h, содержащую k корней
-// Возвращает уменьшенный диск, если успешно, иначе nullopt
-template<typename T>
-std::optional<Disk<T>> NewtonTest(const std::vector<cplx<T>>& a, const Disk<T>& D, int k) {
-    // Базовый Newton-like шаг: x' = x - k * F(x)/F'(x)
-    cplx<T> xC = D.center;
-    cplx<T> Fx = detail::eval_poly(a, xC);
-    // вычисляем коэффициенты первой производной:
-    std::vector<cplx<T>> deriv = detail::derivative_coeffs(a, 1);
-    cplx<T> Fpx = detail::eval_poly(deriv, xC);
+    int k = D.num_roots;
+    cplx<T> x_C = D.center;
+    T r = D.radius;
 
-    // избегаем маленьких значений производных
-    long double denom = std::abs(Fpx);
-    if (denom < 1e-18L) return std::nullopt;
+    cplx<T> F_val = detail_sagralov::eval_poly(a, x_C);
+    auto deriv = detail_sagralov::derivative(a);
+    cplx<T> Fp_val = detail_sagralov::eval_poly(deriv, x_C);
 
-    cplx<T> x_new = xC - (T)k * (Fx / Fpx);
+    if (abs_val(Fp_val) < T(1e-18))
+        return std::nullopt;
 
-    // выбираем новый радиус, уменьшенный в несколько раз
-    T r_new = D.radius * (T)0.5L; // сокращение вдвое
-    // проверяем T_star на диске с центром в x_new с радиусом r_new
-    int k2 = T_star(a, x_new, r_new);
-    if (k2 == k) return Disk<T>(x_new, r_new);
+    cplx<T> x_new = x_C - cplx<T>(T(k), T(0)) * (F_val / Fp_val);
+    T r_new = r / T(2 * N_C);
+
+    int k_new = T_star(a, x_new, r_new);
+    if (k_new == k)
+        return Disk<T>(x_new, r_new, k);
+
     return std::nullopt;
 }
 
-// Bisection: делит квадратную область на 4 части
-// запускает T_star для каждого описанного диска и возвращает непустые (k > 0)
-template<typename T>
-std::vector<std::pair<cplx<T>, T>> BisectionComponent(const std::vector<cplx<T>>& a, const cplx<T>& center, T halfw) {
-    std::vector<std::pair<cplx<T>, T>> out;
-    auto subs = detail::subdivide_square(center, halfw);
-    for (auto& p : subs) {
-        cplx<T> c = p.first;
-        T h = p.second;
-        // ограниченный радиус диска r = sqrt(2) * h
-        T r = h * (T)std::sqrt(2.0L);
-        int k = T_star(a, c, r);
-        if (k > 0) {
-            out.emplace_back(c, h);
-        }
-    }
-    return out;
+// Бисекция квадрата на 4 подквадрата
+template <typename T>
+std::vector<std::pair<cplx<T>, T>> BisectionSquare(const cplx<T>& center, T halfw)
+{
+    T h2 = halfw / static_cast<T>(2);
+    return {
+        {cplx<T>(center.real() - h2, center.imag() - h2), h2},
+        {cplx<T>(center.real() + h2, center.imag() - h2), h2},
+        {cplx<T>(center.real() - h2, center.imag() + h2), h2},
+        {cplx<T>(center.real() + h2, center.imag() + h2), h2} };
 }
 
-// Основная функция CIsolate:
-// Вход:
-//   coeffs : коэффициенты многочлена (вещественные или комплексные).
-//   center : центр начального квадрата.
-//   halfw : полуразмер квадрата.
-//   min_radius : остановка при радиусе ≤ min_radius.
-// Возвращает вектор дисков, каждый из которых содержит ровно один простой корень.
-template<typename T_in, typename T = long double>
-std::vector<Disk<T>> CIsolate(const std::vector<T_in>& coeffs_in,
-    cplx<T> center,
-    T halfw,
-    T min_radius = (T)1e-6,
-    int max_iterations = 200) {
-    // преобразуем входные коэффициенты в комплексные коэффициенты типа cplx<T>
+// CIsolate - изоляция комплексных корней с ненулевыми Re и Im частями
+// ВАЖНО: метод НЕ предназначен для корней на вещественной или мнимой осях!
+// Для вещественных корней используйте Sagralov_real_roots
+// Для чисто мнимых корней рекомендуется преобразование P(ix) и применение метода вещественных корней
+template <typename T_in, typename T = long double>
+std::vector<Disk<T>> CIsolate(
+    const std::vector<T_in>& coeffs_in,
+    cplx<T> center = cplx<T>(0, 0),
+    T halfw = static_cast<T>(0.0),
+    T min_radius = static_cast<T>(1e-3),
+    int max_iterations = 500)
+{
+    // Преобразуем в комплексные коэффициенты
     std::vector<cplx<T>> a;
     a.reserve(coeffs_in.size());
-    for (auto& v : coeffs_in) a.emplace_back((T)v, (T)0);
+    for (const auto& v : coeffs_in)
+    {
+        a.emplace_back(static_cast<T>(v), static_cast<T>(0));
+    }
 
-    int deg = (int)a.size() - 1;
-    if (deg < 1) return {};
+    int n = (int)a.size() - 1;
+    if (n < 1)
+        return {};
 
-    // необязательная нормализация: делаем так, чтобы модуль старшего коэффициента был в диапазоне (1/4, 1]
-    long double leading = std::abs(a[0]);
-    if (leading != 0.0L) {
-        // масштабируем многочлен так, чтобы |a0 * s| ∈ (1/4, 1], где s ≈ степень числа 2
-        long double scale = 1.0L;
-        // при необходимости умножаем на подходящую степень 2
-        while (leading * scale > 1.0L) scale /= 2.0L;
-        while (leading * scale <= 0.25L) scale *= 2.0L;
-        if (scale != 1.0L) {
-            for (auto& c : a) c *= (T)scale;
+    // Вычисляем границу Коши ДО масштабирования
+    T max_coef = T(0);
+    for (size_t i = 0; i < a.size() - 1; ++i)
+        max_coef = max_val(max_coef, abs_val(a[i]));
+    T leading = abs_val(a.back());
+    if (leading < T(1e-10))
+        return {}; // Вырожденный полином
+
+    T cauchy_bound = T(1) + max_coef / leading;
+
+    // Проблема: CIsolate плохо работает для |z| < 1 (underflow в итерациях Грефе)
+    //
+    // Решение: Трансформация P(x) → Q(y) = P(y/k)
+    // - Если z корень P, то w = k·z корень Q
+    // - Модули умножаются: |w| = k·|z|
+    // - После нахождения дисков делим на k
+    //
+    // Выбор k: целевая граница Коши ≈ 2.5-3.0 (стабильная область для итераций Грефе)
+    T scale_k = T(1);
+
+    if (cauchy_bound < T(2.0))
+    {
+        // Малые/средние корни: увеличиваем для стабильности
+        scale_k = T(2.5) / cauchy_bound;
+
+        // Q(y) = P(y/k): a_i → a_i / k^i
+        T k_pow = T(1);
+        T inv_k = T(1) / scale_k;
+        for (size_t i = 0; i < a.size(); ++i)
+        {
+            a[i] *= k_pow;
+            k_pow *= inv_k;
+        }
+    }
+    else if (cauchy_bound > T(10.0))
+    {
+        // Очень большие корни: уменьшаем для предотвращения overflow
+        scale_k = T(3.0) / cauchy_bound;
+
+        T k_pow = T(1);
+        T inv_k = T(1) / scale_k;
+        for (size_t i = 0; i < a.size(); ++i)
+        {
+            a[i] *= k_pow;
+            k_pow *= inv_k;
         }
     }
 
-    // начальная компонента — весь квадрат
-    struct Component { cplx<T> center; T halfw; int estimated_k; int nC; };
-    std::vector<Component> components;
-    // вычисляем начальное T_star для описанной окружности квадрата
-    T r_init = halfw * (T)std::sqrt(2.0L);
-    int k_init = T_star(a, center, r_init);
-    if (k_init <= 0) {
-        // возможно, в квадрате нет корней — возвращаем пусто
-        if (k_init == 0) return {};
-        // если результат неопределён: продолжаем деление квадрата на части
-    }
-    // начинаем с разбиения квадрата на 4 части
-    auto first_sub = detail::subdivide_square(center, halfw);
-    for (auto& p : first_sub) {
-        T r = p.second * (T)std::sqrt(2.0L);
-        int k = T_star(a, p.first, r);
-        if (k > 0) components.push_back({ p.first, p.second, k, 1 });
+    // Нормализация: 1/4 < |a_n| <= 1 (требование теории)
+    a = detail_sagralov::normalize_polynomial(a);
+
+    // Пересчитываем границу Коши ПОСЛЕ масштабирования
+    if (halfw <= T(0))
+    {
+        max_coef = T(0);
+        for (size_t i = 0; i < a.size() - 1; ++i)
+            max_coef = max_val(max_coef, abs_val(a[i]));
+        leading = abs_val(a.back());
+
+        T new_cauchy_bound = T(1) + max_coef / leading;
+
+        // Увеличиваем область для надёжности
+        halfw = new_cauchy_bound * T(1.8);
     }
 
-    std::vector<Disk<T>> isolating_disks;
-    int iter = 0;
-    // основной цикл: обрабатываем каждую компоненту, пока не найдены все изолирующие диски или не превышено max_iterations
-    while (!components.empty() && iter < max_iterations) {
-        ++iter;
-        Component C = components.back();
-        components.pop_back();
+    std::vector<Component<T>> work_queue;
 
-        // вычисляем описанную окружность для текущей компоненты
-        cplx<T> mC = C.center;
-        T rC = C.halfw * (T)std::sqrt(2.0L);
-        int kC = C.estimated_k;
-        // быстрый тест: если диск уже достаточно мал и проверен с помощью T_star
-        if (C.halfw <= min_radius) {
-            // перепроверяем T_star (возможно, на удвоенном диске)
-            int k_now = T_star(a, mC, rC);
-            if (k_now == kC && kC == 1) {
-                isolating_disks.emplace_back(Disk<T>(mC, rC));
-                continue;
+    auto process_square = [&](const cplx<T>& sq_center, T sq_half) -> std::optional<Component<T>>
+        {
+            T radius = sq_half * sqrt_val(static_cast<T>(2)) * static_cast<T>(1.15);
+            int k = T_star(a, sq_center, radius);
+
+            if (k > 0)
+            {
+                Component<T> comp;
+                comp.squares.push_back(sq_center);
+                comp.halfw = sq_half;
+                comp.disk = Disk<T>(sq_center, radius, k);
+                comp.N_C = 4;
+                comp.n_C = 1;
+                return comp;
             }
-            // если не прошло проверку — продолжаем уточнение
+            return std::nullopt;
+        };
+
+    // Начальное деление: делим область на 4 квадрата
+    auto initial_subs = BisectionSquare(center, halfw);
+    for (const auto& [sq_center, sq_half] : initial_subs)
+    {
+        auto comp_opt = process_square(sq_center, sq_half);
+        if (comp_opt)
+            work_queue.push_back(*comp_opt);
+    }
+
+    // Если ни один начальный квадрат не содержит корней, делим мельче
+    if (work_queue.empty() && n > 0)
+    {
+        // Попробуем деление на 16 подквадратов (двойная бисекция)
+        T half2 = halfw / T(2);
+        for (const auto& [c1, h1] : initial_subs)
+        {
+            auto sub2 = BisectionSquare(c1, h1);
+            for (const auto& [sq_center, sq_half] : sub2)
+            {
+                auto comp_opt = process_square(sq_center, sq_half);
+                if (comp_opt)
+                    work_queue.push_back(*comp_opt);
+            }
+        }
+    }
+
+    std::vector<Disk<T>> isolated_roots;
+    int iteration = 0;
+
+    while (!work_queue.empty() && iteration < max_iterations)
+    {
+        ++iteration;
+
+        Component<T> current = work_queue.back();
+        work_queue.pop_back();
+
+        if (current.disk.radius <= min_radius)
+        {
+            isolated_roots.push_back(current.disk);
+            continue;
         }
 
-        if (kC == 1) {
-            // пробуем применить NewtonTest для быстрого нахождения изолирующего диска
-            auto opt = NewtonTest(a, Disk<T>(mC, rC), kC);
-            if (opt) {
-                // если радиус полученного диска достаточно мал — добавляем его
-                if (opt->radius <= min_radius) {
-                    isolating_disks.push_back(*opt);
+        // Согласно теории: проверяем T*(Δ), если k≥0 добавляем в isolated_roots
+        int k_current = T_star(a, current.disk.center, current.disk.radius);
+
+        if (k_current <= 0)
+        {
+            // Если T_star не подтверждает корни, пропускаем
+            continue;
+        }
+
+        if (k_current == 1)
+        {
+            // Один корень - сразу изолирован
+            isolated_roots.push_back(current.disk);
+            continue;
+        }
+
+        // k_current > 1: несколько корней, попробуем NewtonTest
+        auto newton_disk = NewtonTest(a, current.disk, current.N_C);
+        if (newton_disk && newton_disk->radius < current.disk.radius * T(0.8))
+        {
+            // Успешное уточнение
+            Component<T> refined;
+            refined.squares.push_back(newton_disk->center);
+            refined.halfw = newton_disk->radius / sqrt_val(T(2));
+            refined.disk = *newton_disk;
+            refined.n_C = current.n_C + 1;
+            refined.N_C = (1 << (2 * refined.n_C));
+            work_queue.push_back(refined);
+            continue;
+        }
+
+        // NewtonTest не помог, применяем бисекцию по теории
+
+        std::vector<std::pair<cplx<T>, T>> subsquares;
+        for (const auto& sq : current.squares)
+        {
+            auto subs = BisectionSquare(sq, current.halfw);
+            subsquares.insert(subsquares.end(), subs.begin(), subs.end());
+        }
+
+        struct SquareData
+        {
+            cplx<T> center;
+            T halfw;
+            T radius;
+            int roots;
+        };
+        std::vector<SquareData> nonempty_squares;
+
+        for (const auto& [sq_center, sq_half] : subsquares)
+        {
+            T radius = sq_half * sqrt_val(T(2)) * T(1.15);
+            int k = T_star(a, sq_center, radius);
+            if (k > 0)
+                nonempty_squares.push_back({ sq_center, sq_half, radius, k });
+        }
+
+        if (nonempty_squares.empty())
+            continue;
+
+        std::vector<bool> processed(nonempty_squares.size(), false);
+
+        for (size_t i = 0; i < nonempty_squares.size(); ++i)
+        {
+            if (processed[i])
+                continue;
+
+            std::vector<cplx<T>> component_centers;
+            component_centers.push_back(nonempty_squares[i].center);
+            int total_roots = nonempty_squares[i].roots;
+            T comp_halfw = nonempty_squares[i].halfw;
+            processed[i] = true;
+
+            for (size_t j = i + 1; j < nonempty_squares.size(); ++j)
+            {
+                if (processed[j])
+                    continue;
+
+                T dist = abs_val(nonempty_squares[i].center - nonempty_squares[j].center);
+                T threshold = comp_halfw * T(2.2);
+
+                if (dist <= threshold)
+                {
+                    component_centers.push_back(nonempty_squares[j].center);
+                    total_roots += nonempty_squares[j].roots;
+                    processed[j] = true;
                 }
-                else {
-                    // иначе добавляем как новую компоненту для дальнейшего уменьшения
-                    components.push_back({ opt->center, opt->radius / (T)std::sqrt(2.0L), kC, C.nC + 1 });
-                }
-                continue;
             }
-        }
-        else if (kC > 1) {
-            // пробуем NewtonTest для кластера корней
-            auto optc = NewtonTest(a, Disk<T>(mC, rC), kC);
-            if (optc) {
-                // если успешно, добавляем уменьшенную компоненту
-                components.push_back({ optc->center, optc->radius / (T)std::sqrt(2.0L), kC, C.nC + 1 });
-                continue;
-            }
-        }
 
-        // если NewtonTest не сработал или не применим → делим квадрат (Bisection)
-        auto children = BisectionComponent(a, C.center, C.halfw);
-        for (auto& ch : children) {
-            // вычисляем k для каждой дочерней области
-            T rch = ch.second * (T)std::sqrt(2.0L);
-            int kk = T_star(a, ch.first, rch);
-            if (kk <= 0) continue;
-            // если kk == 1 и размер маленький → сразу добавляем изолирующий диск
-            if (kk == 1 && ch.second <= min_radius) {
-                isolating_disks.emplace_back(Disk<T>(ch.first, rch));
-            }
-            else {
-                components.push_back({ ch.first, ch.second, kk, std::max(1, C.nC - 1) });
+            cplx<T> centroid(0, 0);
+            for (const auto& c : component_centers)
+                centroid += c;
+            centroid /= cplx<T>(T(component_centers.size()), T(0));
+
+            T max_distance = T(0);
+            for (const auto& c : component_centers)
+                max_distance = max_val(max_distance, abs_val(c - centroid));
+
+            T component_radius = max_distance + comp_halfw * sqrt_val(T(2)) * T(1.15);
+
+            Component<T> new_component;
+            new_component.squares = component_centers;
+            new_component.halfw = comp_halfw;
+            new_component.disk = Disk<T>(centroid, component_radius, total_roots);
+            new_component.n_C = max_val(1, current.n_C - 1);
+            new_component.N_C = (1 << (2 * new_component.n_C));
+
+            work_queue.push_back(new_component);
+        }
+    }
+
+    // Если достигнут лимит итераций, добавляем оставшиеся компоненты как результаты
+    // с увеличенным радиусом для покрытия возможных корней
+    if (iteration >= max_iterations && !work_queue.empty())
+    {
+        for (const auto& comp : work_queue)
+        {
+            if (comp.disk.num_roots > 0)
+            {
+                // Добавляем диск с увеличенным радиусом для надежности
+                T safe_radius = comp.disk.radius * T(2);
+                isolated_roots.emplace_back(comp.disk.center, safe_radius, comp.disk.num_roots);
             }
         }
     }
 
-    // Постобработка: пробуем уточнить центры изолирующих дисков с помощью итераций Ньютона (для простых корней)
-    for (auto& D : isolating_disks) {
-        cplx<T> x = D.center;
-        for (int it = 0; it < 10; ++it) {
-            cplx<T> Fx = detail::eval_poly(a, x);
-            cplx<T> Fpx = detail::eval_poly(detail::derivative_coeffs(a, 1), x);
-            if (std::abs(Fpx) < 1e-18L) break;
-            cplx<T> xn = x - Fx / Fpx;
-            if (std::abs(xn - x) < 1e-12L) { x = xn; break; }
-            x = xn;
+    // Обратная трансформация: диски для Q(y) → диски для P(x)
+    // Если w = k·z, то z = w/k
+    // Делим центры и радиусы на k
+    if (scale_k != T(1))
+    {
+        for (auto& disk : isolated_roots)
+        {
+            disk.center /= scale_k;
+            disk.radius /= scale_k;
         }
-        D.center = x;
     }
 
-    return isolating_disks;
+    return isolated_roots;
 }
