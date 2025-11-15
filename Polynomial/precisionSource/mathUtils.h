@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// Файл с математическими утилитами для всех используемых типов
+// Павлова Анастасия, КМБО-01-22
+
+#pragma once
 
 #include <vector>
 #include <limits>
@@ -15,10 +18,8 @@
 #include "mathprecision.h"
 #include "polyprecision.h"
 
-// =============================
-//   ВСПОМОГАТЕЛЬНЫЕ ТИПЫ
-// =============================
 
+// ВСПОМОГАТЕЛЬНЫЕ ТИПЫ
 template <typename U, typename = void>
 struct has_to_double : std::false_type {};
 
@@ -73,9 +74,7 @@ struct underlying_real_type<std::complex<T>> { using type = T; };
 template <typename T>
 struct underlying_real_type<complex_precision<T>> { using type = T; };
 
-// =============================
-//       ABS / MATH UTILS
-// =============================
+// АБСОЛЮТНОЕ ЗНАЧЕНИЕ
 
 // Для стандартных арифметических типов
 template <typename T>
@@ -97,9 +96,7 @@ inline T abs_val(const complex_precision<T>& z) {
     return abs(z);
 }
 
-// =============================
-//     ЛОГАРИФМЫ И ЭКСПОНЕНТЫ
-// =============================
+// ЛОГАРИФМЫ И ЭКСПОНЕНТЫ
 
 // Для стандартных арифметических типов
 template <typename T>
@@ -208,9 +205,7 @@ template <typename T>
 inline typename std::enable_if_t<!std::is_arithmetic_v<T> && !std::is_same_v<T, float_precision>, T>
 log10_val(const T& x) { return log_val(x) / log_val(T(10)); }
 
-// =============================
-//    ТРИГОНОМЕТРИЧЕСКИЕ ФУНКЦИИ
-// =============================
+// ТРИГОНОМЕТРИЧЕСКИЕ ФУНКЦИИ
 
 // sin_val для стандартных типов
 template <typename T>
@@ -221,7 +216,6 @@ sin_val(const T& x) { return std::sin(x); }
 inline float_precision sin_val(const float_precision& x) {
     return sin(x);
 }
-
 
 // cos_val для стандартных типов
 template <typename T>
@@ -243,9 +237,7 @@ inline float_precision atan2_val(const float_precision& y, const float_precision
     return atan2(y, x);
 }
 
-// =============================
-//          ПРОВЕРКИ
-// =============================
+// ПРОВЕРКИ
 
 // isfinite_val для стандартных типов
 template <typename T>
@@ -255,13 +247,6 @@ isfinite_val(const T& x) { return std::isfinite(x); }
 // isfinite_val для float_precision
 inline bool isfinite_val(const float_precision& x) {
     return isfinite(x);
-}
-
-// isfinite_val для других типов
-template <typename T>
-inline typename std::enable_if_t<!std::is_arithmetic_v<T> && !std::is_same_v<T, float_precision>, bool>
-isfinite_val(const T& x) {
-    return abs_val(x) < std::numeric_limits<T>::max();
 }
 
 template <typename T>
@@ -283,9 +268,7 @@ inline bool is_one_val(const T& x, T eps = T(1e-12)) {
 template <typename T>
 inline bool is_positive_val(const T& x) { return x >= T(0); }
 
-// =============================
-//       СРАВНЕНИЯ / КЛАМПЫ
-// =============================
+// СРАВНЕНИЯ / КЛАМПЫ
 
 // max_val для всех типов
 template <typename T>
@@ -307,9 +290,7 @@ inline T clamp_val(const T& v, const T& lo, const T& hi) {
     return v;
 }
 
-// =============================
-//        LDExp и др.
-// =============================
+// LDExp и др.
 
 // ldexp_val для стандартных типов
 template <typename T>
@@ -328,9 +309,7 @@ ldexp_val(const T& x, int exp) {
     return x * pow_val(T(2), T(exp));
 }
 
-// =============================
-//        EPS / HELPERS
-// =============================
+// EPS / HELPERS
 
 // eps_for_degree для стандартных типов
 template <typename T>
@@ -361,6 +340,9 @@ eps_for_degree(unsigned P) {
     return T(std::max(eps_small, eps_machine));
 }
 
+// ПРИСВАИВАНИЕ БЕСКОНЕЧНОСТИ 
+
+// - бесконечность
 template<typename T>
 inline T neg_inf_val() {
     if constexpr (std::is_arithmetic_v<T>)
@@ -371,6 +353,7 @@ inline T neg_inf_val() {
         return T(-1e300); // surrogate for -inf
 }
 
+// + бесконечность
 template<typename T>
 inline T pos_inf_val() {
     if constexpr (std::is_arithmetic_v<T>)
