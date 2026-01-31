@@ -13,7 +13,7 @@
 - **documentation/** — Техническая документация проекта
 
 ### Авторы
-Павлова Анастасия, КМБО-01-22:
+Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru:
 	1. methods/
 		1.1 Graeffe_real_roots.h, Graeffe_complex_roots.h
 		1.2 Con_Frac.h, Con_Frac_Helper.h
