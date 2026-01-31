@@ -1,5 +1,5 @@
-﻿// Файл с математическими утилитами для всех используемых типов
-// Павлова Анастасия, КМБО-01-22
+// Файл с математическими функциями для всех используемых типов
+// Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
 
 #pragma once
 
@@ -18,72 +18,19 @@
 #include "mathprecision.h"
 #include "polyprecision.h"
 
-
-// ВСПОМОГАТЕЛЬНЫЕ ТИПЫ
-template <typename U, typename = void>
-struct has_to_double : std::false_type {};
-
-template <typename U>
-struct has_to_double<U, std::void_t<decltype(std::declval<U>().to_double())>> : std::true_type {};
-
-template <typename U, typename = void>
-struct has_member_abs : std::false_type {};
-
-template <typename U>
-struct has_member_abs<U, std::void_t<decltype(std::declval<U>().abs())>> : std::true_type {};
-
-template <typename U, typename = void>
-struct has_member_exp : std::false_type {};
-
-template <typename U>
-struct has_member_exp<U, std::void_t<decltype(std::declval<U>().exp())>> : std::true_type {};
-
-template <typename U, typename = void>
-struct has_member_log : std::false_type {};
-
-template <typename U>
-struct has_member_log<U, std::void_t<decltype(std::declval<U>().log())>> : std::true_type {};
-
-template <typename U, typename = void>
-struct has_member_sqrt : std::false_type {};
-
-template <typename U>
-struct has_member_sqrt<U, std::void_t<decltype(std::declval<U>().sqrt())>> : std::true_type {};
-
-template <typename T>
-struct is_std_complex : std::false_type {};
-
-template <typename T>
-struct is_std_complex<std::complex<T>> : std::true_type {};
-
-template <typename T>
-struct is_complex_precision : std::false_type {};
-
-template <typename T>
-struct is_complex_precision<complex_precision<T>> : std::true_type {};
-
-template <typename T>
-struct is_complex_type : std::bool_constant<is_std_complex<T>::value || is_complex_precision<T>::value> {};
-
-template <typename T>
-struct underlying_real_type { using type = T; };
-
-template <typename T>
-struct underlying_real_type<std::complex<T>> { using type = T; };
-
-template <typename T>
-struct underlying_real_type<complex_precision<T>> { using type = T; };
-
-// АБСОЛЮТНОЕ ЗНАЧЕНИЕ
-
+// МОДУЛЬ ЧИСЛА
 // Для стандартных арифметических типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-abs_val(const T& x) { return std::abs(x); }
+abs_val(const T& x) { 
+    return std::abs(x);
+}
 
 // Для std::complex
 template <typename T>
-inline T abs_val(const std::complex<T>& x) { return std::abs(x); }
+inline T abs_val(const std::complex<T>& x) { 
+    return std::abs(x);
+}
 
 // Для float_precision
 inline float_precision abs_val(const float_precision& x) {
@@ -97,11 +44,12 @@ inline T abs_val(const complex_precision<T>& z) {
 }
 
 // ЛОГАРИФМЫ И ЭКСПОНЕНТЫ
-
 // Для стандартных арифметических типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-exp_val(const T& x) { return std::exp(x); }
+exp_val(const T& x) { 
+    return std::exp(x); 
+}
 
 // Для float_precision
 inline float_precision exp_val(const float_precision& x) {
@@ -116,9 +64,11 @@ inline complex_precision<T> exp_val(const complex_precision<T>& z) {
 
 // Для std::complex
 template <typename T>
-inline std::complex<T> exp_val(const std::complex<T>& z) { return std::exp(z); }
+inline std::complex<T> exp_val(const std::complex<T>& z) { 
+    return std::exp(z); 
+}
 
-// expm1_val — безопасная версия exp(x)-1
+// exp(x)-1
 template <typename T>
 inline T expm1_val(const T& x) {
     if constexpr (std::is_arithmetic_v<T>)
@@ -151,12 +101,16 @@ inline complex_precision<T> log_val(const complex_precision<T>& z) {
 
 // log_val для std::complex
 template <typename T>
-inline std::complex<T> log_val(const std::complex<T>& z) { return std::log(z); }
+inline std::complex<T> log_val(const std::complex<T>& z) { 
+    return std::log(z); 
+}
 
 // pow_val для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-pow_val(const T& base, const T& exp) { return std::pow(base, exp); }
+pow_val(const T& base, const T& exp) { 
+    return std::pow(base, exp);
+}
 
 // pow_val для float_precision
 inline float_precision pow_val(const float_precision& base, const float_precision& exp) {
@@ -173,7 +127,9 @@ pow_val(const T& base, const U& exp) {
 // sqrt_val для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-sqrt_val(const T& x) { return std::sqrt(x); }
+sqrt_val(const T& x) { 
+    return std::sqrt(x); 
+}
 
 // sqrt_val для float_precision
 inline float_precision sqrt_val(const float_precision& x) {
@@ -188,12 +144,16 @@ inline complex_precision<T> sqrt_val(const complex_precision<T>& z) {
 
 // sqrt_val для std::complex
 template <typename T>
-inline std::complex<T> sqrt_val(const std::complex<T>& z) { return std::sqrt(z); }
+inline std::complex<T> sqrt_val(const std::complex<T>& z) { 
+    return std::sqrt(z);
+}
 
 // log10_val для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-log10_val(const T& x) { return std::log10(x); }
+log10_val(const T& x) { 
+    return std::log10(x);
+}
 
 // log10_val для float_precision
 inline float_precision log10_val(const float_precision& x) {
@@ -203,14 +163,17 @@ inline float_precision log10_val(const float_precision& x) {
 // log10_val для других типов
 template <typename T>
 inline typename std::enable_if_t<!std::is_arithmetic_v<T> && !std::is_same_v<T, float_precision>, T>
-log10_val(const T& x) { return log_val(x) / log_val(T(10)); }
+log10_val(const T& x) { 
+    return log_val(x) / log_val(T(10));
+}
 
 // ТРИГОНОМЕТРИЧЕСКИЕ ФУНКЦИИ
-
 // sin_val для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-sin_val(const T& x) { return std::sin(x); }
+sin_val(const T& x) { 
+    return std::sin(x);
+}
 
 // sin_val для float_precision
 inline float_precision sin_val(const float_precision& x) {
@@ -220,7 +183,9 @@ inline float_precision sin_val(const float_precision& x) {
 // cos_val для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-cos_val(const T& x) { return std::cos(x); }
+cos_val(const T& x) { 
+    return std::cos(x);
+}
 
 // cos_val для float_precision
 inline float_precision cos_val(const float_precision& x) {
@@ -230,7 +195,9 @@ inline float_precision cos_val(const float_precision& x) {
 // atan2_val для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-atan2_val(const T& y, const T& x) { return std::atan2(y, x); }
+atan2_val(const T& y, const T& x) { 
+    return std::atan2(y, x);
+}
 
 // atan2_val для float_precision
 inline float_precision atan2_val(const float_precision& y, const float_precision& x) {
@@ -238,11 +205,12 @@ inline float_precision atan2_val(const float_precision& y, const float_precision
 }
 
 // ПРОВЕРКИ
-
 // isfinite_val для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, bool>
-isfinite_val(const T& x) { return std::isfinite(x); }
+isfinite_val(const T& x) { 
+    return std::isfinite(x);
+}
 
 // isfinite_val для float_precision
 inline bool isfinite_val(const float_precision& x) {
@@ -250,7 +218,9 @@ inline bool isfinite_val(const float_precision& x) {
 }
 
 template <typename T>
-inline bool is_finite_ld(const T& x) { return isfinite_val(x); }
+inline bool is_finite_ld(const T& x) { 
+    return isfinite_val(x);
+}
 
 // is_zero_val для всех типов
 template <typename T>
@@ -266,10 +236,11 @@ inline bool is_one_val(const T& x, T eps = T(1e-12)) {
 
 // is_positive_val для всех типов
 template <typename T>
-inline bool is_positive_val(const T& x) { return x >= T(0); }
+inline bool is_positive_val(const T& x) { 
+    return x >= T(0); 
+}
 
-// СРАВНЕНИЯ / КЛАМПЫ
-
+// СРАВНЕНИЯ
 // max_val для всех типов
 template <typename T>
 inline T max_val(const T& a, const T& b) {
@@ -291,11 +262,12 @@ inline T clamp_val(const T& v, const T& lo, const T& hi) {
 }
 
 // LDExp и др.
-
 // ldexp_val для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
-ldexp_val(const T& x, int exp) { return std::ldexp(x, exp); }
+ldexp_val(const T& x, int exp) { 
+    return std::ldexp(x, exp);
+}
 
 // ldexp_val для float_precision
 inline float_precision ldexp_val(const float_precision& x, int exp) {
@@ -309,8 +281,7 @@ ldexp_val(const T& x, int exp) {
     return x * pow_val(T(2), T(exp));
 }
 
-// EPS / HELPERS
-
+// EPS
 // eps_for_degree для стандартных типов
 template <typename T>
 inline typename std::enable_if_t<std::is_arithmetic_v<T>, T>
@@ -341,25 +312,33 @@ eps_for_degree(unsigned P) {
 }
 
 // ПРИСВАИВАНИЕ БЕСКОНЕЧНОСТИ 
-
-// - бесконечность
+// -бесконечность
 template<typename T>
 inline T neg_inf_val() {
     if constexpr (std::is_arithmetic_v<T>)
         return -std::numeric_limits<T>::infinity();
     else if constexpr (std::is_same_v<T, float_precision>)
-        return -FP_INFINITY; // используем определённый константный FP_INFINITY для float_precision
+        return -FP_INFINITY; // используем определенный константный FP_INFINITY для float_precision
     else
-        return T(-1e300); // surrogate for -inf
+        return T(-1e300); 
 }
 
-// + бесконечность
+// +бесконечность
 template<typename T>
 inline T pos_inf_val() {
     if constexpr (std::is_arithmetic_v<T>)
         return std::numeric_limits<T>::infinity();
     else if constexpr (std::is_same_v<T, float_precision>)
-        return FP_INFINITY; // используем определённый константный FP_INFINITY для float_precision
+        return FP_INFINITY; // используем определенный константный FP_INFINITY для float_precision
     else
-        return T(1e300); // surrogate for +inf
+        return T(1e300);
+}
+
+// ФАКТОРИАЛ ЧИСЛА
+template <typename T>
+T factorial(int n) {
+    T result = T(1);
+    for (int i = 2; i <= n; ++i)
+        result = result * T(i);
+    return result;
 }
