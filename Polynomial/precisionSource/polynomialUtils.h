@@ -1,5 +1,5 @@
-// Заголовочный файл для универсальных методов, связанных с полиномами
-// Реализация: Павлова Анастасия, КМБО-01-22
+// Р—Р°РіРѕР»РѕРІРѕС‡РЅС‹Р№ С„Р°Р№Р» РґР»СЏ СѓРЅРёРІРµСЂСЃР°Р»СЊРЅС‹С… РјРµС‚РѕРґРѕРІ, СЃРІСЏР·Р°РЅРЅС‹С… СЃ РїРѕР»РёРЅРѕРјР°РјРё
+// Р РµР°Р»РёР·Р°С†РёСЏ: РџР°РІР»РѕРІР° РђРЅР°СЃС‚Р°СЃРёСЏ, РљРњР‘Рћ-01-22 vihuhol04@mail.ru
 
 #pragma once
 
@@ -14,21 +14,7 @@
 #include "fprecision.h"
 #include "complexprecision.h"
 
-// метод нахождения значение производной многолена в некоторой точке
-// Добавила: Семенидо Алина, КМБО-06-22
-template<typename Complex>
-std::pair<Complex, Complex> eval_poly_and_deriv(const std::vector<Complex>&c,
-                                                const Complex&x) {
-    Complex f = c.back();
-    Complex df = 0;
-    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(c.size()) - 2; i >= 0; --i) {
-        df = df * x + f;
-        f = f * x + c[static_cast<std::size_t>(i)];
-    }
-    return {f, df};
-}
-
-// производная многочлена
+// РџСЂРѕРёР·РІРѕРґРЅР°СЏ РјРЅРѕРіРѕС‡Р»РµРЅР°
 template<typename T>
 std::vector<T> derivative(const std::vector<T>&poly) {
     std::vector<T> result;
@@ -37,7 +23,7 @@ std::vector<T> derivative(const std::vector<T>&poly) {
     return result;
 }
 
-// деление многочлена на (x - r)
+// Р”РµР»РµРЅРёРµ РјРЅРѕРіРѕС‡Р»РµРЅР° РЅР° (x - r)
 template<typename T>
 std::vector<T> deflate_poly(const std::vector<T>&poly, const T&root) {
     if (poly.size() < 2)
@@ -54,7 +40,7 @@ std::vector<T> deflate_poly(const std::vector<T>&poly, const T&root) {
     return result;
 }
 
-// вычисляет значение многочлена в точке (вещественный корень)
+// Р’С‹С‡РёСЃР»СЏРµС‚ Р·РЅР°С‡РµРЅРёРµ РјРЅРѕРіРѕС‡Р»РµРЅР° РІ С‚РѕС‡РєРµ (РІРµС‰РµСЃС‚РІРµРЅРЅС‹Р№ РєРѕСЂРµРЅСЊ)
 template<typename T>
 T eval_poly(const std::vector<T>&coeffs, T x) {
     T res = T(0);
@@ -63,7 +49,7 @@ T eval_poly(const std::vector<T>&coeffs, T x) {
     return res;
 }
 
-// вычисляет значение многочлена в точке (комплексный корень)
+// Р’С‹С‡РёСЃР»СЏРµС‚ Р·РЅР°С‡РµРЅРёРµ РјРЅРѕРіРѕС‡Р»РµРЅР° РІ С‚РѕС‡РєРµ (РєРѕРјРїР»РµРєСЃРЅС‹Р№ РєРѕСЂРµРЅСЊ)
 template<typename T>
 std::complex<T> eval_poly(const std::vector<T>&coeffs, std::complex<T> x) {
     std::complex<T> res(T(0));
@@ -75,7 +61,7 @@ std::complex<T> eval_poly(const std::vector<T>&coeffs, std::complex<T> x) {
 inline float_precision eval_poly(const std::vector<float_precision>&coeffs, float_precision x) {
     float_precision res(0);
     for (int i = static_cast<int>(coeffs.size()) - 1; i >= 0; --i) {
-        res = res * x + coeffs[i]; // обычные операторы * и +
+        res = res * x + coeffs[i]; // РѕР±С‹С‡РЅС‹Рµ РѕРїРµСЂР°С‚РѕСЂС‹ * Рё +
     }
     return res;
 }
@@ -88,7 +74,7 @@ inline complex_precision<T> eval_poly(const std::vector<complex_precision<T>>&co
     return res;
 }
 
-// нормализация полинома (приведение старшего коэффициента к 1)
+// РќРѕСЂРјР°Р»РёР·Р°С†РёСЏ РїРѕР»РёРЅРѕРјР° (РїСЂРёРІРµРґРµРЅРёРµ СЃС‚Р°СЂС€РµРіРѕ РєРѕСЌС„С„РёС†РёРµРЅС‚Р° Рє 1)
 template<typename T>
 std::vector<T> normalizePolynomial(const std::vector<T>&poly) {
     if (poly.empty())
@@ -103,11 +89,37 @@ std::vector<T> normalizePolynomial(const std::vector<T>&poly) {
     return result;
 }
 
-// Функция проверки, что все коэффициенты полинома ненулевые
+// Р¤СѓРЅРєС†РёСЏ РїСЂРѕРІРµСЂРєРё, С‡С‚Рѕ РІСЃРµ РєРѕСЌС„С„РёС†РёРµРЅС‚С‹ РїРѕР»РёРЅРѕРјР° РЅРµРЅСѓР»РµРІС‹Рµ
 bool checkNonZeroCoefficients(const std::vector<int_precision>&coeffs) {
     for (const auto&coeff: coeffs) {
         if (coeff == int_precision(0))
             return false;
     }
     return true;
+}
+
+// РЈРјРЅРѕР¶РµРЅРёРµ РґРІСѓС… РїРѕР»РёРЅРѕРјРѕРІ (ascending РїРѕСЂСЏРґРѕРє)
+template <typename T>
+std::vector<T> multiply_polynomials(const std::vector<T>& p1, const std::vector<T>& p2)
+{
+    if (p1.empty() || p2.empty())
+        return {};
+    std::vector<T> result(p1.size() + p2.size() - 1, T(0));
+    for (size_t i = 0; i < p1.size(); ++i)
+        for (size_t j = 0; j < p2.size(); ++j)
+            result[i + j] = result[i + j] + p1[i] * p2[j];
+    return result;
+}
+
+// РЎР»РѕР¶РµРЅРёРµ РґРІСѓС… РїРѕР»РёРЅРѕРјРѕРІ (ascending РїРѕСЂСЏРґРѕРє)
+template <typename T>
+std::vector<T> add_polynomials(const std::vector<T>& p1, const std::vector<T>& p2)
+{
+    size_t max_size = std::max(p1.size(), p2.size());
+    std::vector<T> result(max_size, T(0));
+    for (size_t i = 0; i < p1.size(); ++i)
+        result[i] = result[i] + p1[i];
+    for (size_t i = 0; i < p2.size(); ++i)
+        result[i] = result[i] + p2[i];
+    return result;
 }
