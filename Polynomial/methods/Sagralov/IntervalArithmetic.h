@@ -1,213 +1,239 @@
-// Интервальная арифметика для 01-теста в методе ANewDsc
-// Гарантированное содержание истинного значения
+// РРЅС‚РµСЂРІР°Р»СЊРЅР°СЏ Р°СЂРёС„РјРµС‚РёРєР° РґР»СЏ 01-С‚РµСЃС‚Р° РІ РјРµС‚РѕРґРµ ANewDsc
+// Р“Р°СЂР°РЅС‚РёСЂРѕРІР°РЅРЅРѕРµ СЃРѕРґРµСЂР¶Р°РЅРёРµ РёСЃС‚РёРЅРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ
 
 #pragma once
 
-#include "mathUtils.h"
+#include <stdexcept>
 
-// Шаблон класса интервала [lower, upper]
-// Хранит диапазон возможных значений числа
-template <typename T>
-class Interval
-{
+#include "mathUtils.h"
+#include <stdexcept>
+
+// РЁР°Р±Р»РѕРЅ РєР»Р°СЃСЃР° РёРЅС‚РµСЂРІР°Р»Р° [lower, upper]
+// РҐСЂР°РЅРёС‚ РґРёР°РїР°Р·РѕРЅ РІРѕР·РјРѕР¶РЅС‹С… Р·РЅР°С‡РµРЅРёР№ С‡РёСЃР»Р°
+template <typename T> class Interval {
 private:
-    T lower; // нижняя граница интервала
-    T upper; // верхняя граница интервала
+	T lower; // РЅРёР¶РЅСЏСЏ РіСЂР°РЅРёС†Р° РёРЅС‚РµСЂРІР°Р»Р°
+	T upper; // РІРµСЂС…РЅСЏСЏ РіСЂР°РЅРёС†Р° РёРЅС‚РµСЂРІР°Р»Р°
 
 public:
-    // конструкторы
-    Interval() : lower(0), upper(0) {} // по умолчанию интервал [0, 0]
+	// РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂС‹
+	Interval() : lower(0), upper(0) {} // РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ РёРЅС‚РµСЂРІР°Р» [0, 0]
 
-    explicit Interval(T value) : lower(value), upper(value) {} // точечный интервал
+	explicit Interval(T value)
+		: lower(value), upper(value) {
+	} // С‚РѕС‡РµС‡РЅС‹Р№ РёРЅС‚РµСЂРІР°Р»
 
-    Interval(T l, T u) : lower(l), upper(u)
-    {
-        // гарантируем, что нижняя граница <= верхней
-        if (l > u) {
-            throw std::invalid_argument("Lower bound must be <= upper bound");
-        }
-    }
+	Interval(T l, T u) : lower(l), upper(u) {
+		// РіР°СЂР°РЅС‚РёСЂСѓРµРј, С‡С‚Рѕ РЅРёР¶РЅСЏСЏ РіСЂР°РЅРёС†Р° <= РІРµСЂС…РЅРµР№
+		if (l > u) {
+			throw std::invalid_argument("Lower bound must be <= upper bound");
+		}
+	}
 
-    // геттеры
-    T getLower() const { return lower; } // начало
-    T getUpper() const { return upper; } // конец
-    T width() const { return upper - lower; }          // ширина интервала
-    T midpoint() const { return (lower + upper) / T(2); } // центральная точка
+	// РіРµС‚С‚РµСЂС‹
+	T getLower() const { return lower; }                  // РЅР°С‡Р°Р»Рѕ
+	T getUpper() const { return upper; }                  // РєРѕРЅРµС†
+	T width() const { return upper - lower; }             // С€РёСЂРёРЅР° РёРЅС‚РµСЂРІР°Р»Р°
+	T midpoint() const { return (lower + upper) / T(2); } // С†РµРЅС‚СЂР°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
 
-    // проверки принадлежности
-    bool contains(T value) const { return value >= lower && value <= upper; }
+	// РїСЂРѕРІРµСЂРєРё РїСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚Рё
+	bool contains(T value) const { return value >= lower && value <= upper; }
 
-    // проверка, содержит ли интервал ноль
-    bool containsZero() const { return lower <= T(0) && upper >= T(0); }
+	// РїСЂРѕРІРµСЂРєР°, СЃРѕРґРµСЂР¶РёС‚ Р»Рё РёРЅС‚РµСЂРІР°Р» РЅРѕР»СЊ
+	bool containsZero() const { return lower <= T(0) && upper >= T(0); }
 
-    // полностью положительный интервал
-    bool isPositive() const { return lower > T(0); }
+	// РїРѕР»РЅРѕСЃС‚СЊСЋ РїРѕР»РѕР¶РёС‚РµР»СЊРЅС‹Р№ РёРЅС‚РµСЂРІР°Р»
+	bool isPositive() const { return lower > T(0); }
 
-    // полностью отрицательный интервал
-    bool isNegative() const { return upper < T(0); }
+	// РїРѕР»РЅРѕСЃС‚СЊСЋ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅС‹Р№ РёРЅС‚РµСЂРІР°Р»
+	bool isNegative() const { return upper < T(0); }
 
-    // Арифметические операции
-    // Все операции выполняются так, чтобы результат гарантированно содержал истинное значение результата операции над реальными числами.
+	// РђСЂРёС„РјРµС‚РёС‡РµСЃРєРёРµ РѕРїРµСЂР°С†РёРё
+	// Р’СЃРµ РѕРїРµСЂР°С†РёРё РІС‹РїРѕР»РЅСЏСЋС‚СЃСЏ С‚Р°Рє, С‡С‚РѕР±С‹ СЂРµР·СѓР»СЊС‚Р°С‚ РіР°СЂР°РЅС‚РёСЂРѕРІР°РЅРЅРѕ СЃРѕРґРµСЂР¶Р°Р»
+	// РёСЃС‚РёРЅРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ СЂРµР·СѓР»СЊС‚Р°С‚Р° РѕРїРµСЂР°С†РёРё РЅР°Рґ СЂРµР°Р»СЊРЅС‹РјРё С‡РёСЃР»Р°РјРё.
 
-    // сложение: [a,b] + [c,d] = [a+c, b+d]
-    Interval operator+(const Interval& other) const { return Interval(lower + other.lower, upper + other.upper); }
+	// СЃР»РѕР¶РµРЅРёРµ: [a,b] + [c,d] = [a+c, b+d]
+	Interval operator+(const Interval& other) const {
+		return Interval(lower + other.lower, upper + other.upper);
+	}
 
-    // вычитание: [a,b] - [c,d] = [a-d, b-c]
-    Interval operator-(const Interval& other) const { return Interval(lower - other.upper, upper - other.lower); }
+	// РІС‹С‡РёС‚Р°РЅРёРµ: [a,b] - [c,d] = [a-d, b-c]
+	Interval operator-(const Interval& other) const {
+		return Interval(lower - other.upper, upper - other.lower);
+	}
 
-    // унарный минус: -[a,b] = [-b, -a]
-    Interval operator-() const { return Interval(-upper, -lower); }
+	// СѓРЅР°СЂРЅС‹Р№ РјРёРЅСѓСЃ: -[a,b] = [-b, -a]
+	Interval operator-() const { return Interval(-upper, -lower); }
 
-    // умножение: перебираем все комбинации концов интервалов
-    Interval operator*(const Interval& other) const {
-        T products[4] = {
-            lower * other.lower,
-            lower * other.upper,
-            upper * other.lower,
-            upper * other.upper
-        };
+	// СѓРјРЅРѕР¶РµРЅРёРµ: РїРµСЂРµР±РёСЂР°РµРј РІСЃРµ РєРѕРјР±РёРЅР°С†РёРё РєРѕРЅС†РѕРІ РёРЅС‚РµСЂРІР°Р»РѕРІ
+	Interval operator*(const Interval& other) const {
+		T products[4] = { lower * other.lower, lower * other.upper,
+						 upper * other.lower, upper * other.upper };
 
-        T min_prod = products[0];
-        T max_prod = products[0];
-        for (int i = 1; i < 4; ++i) {
-            min_prod = min_val(min_prod, products[i]);
-            max_prod = max_val(max_prod, products[i]);
-        }
+		T min_prod = products[0];
+		T max_prod = products[0];
+		for (int i = 1; i < 4; ++i) {
+			min_prod = min_val(min_prod, products[i]);
+			max_prod = max_val(max_prod, products[i]);
+		}
 
-        return Interval(min_prod, max_prod);
-    }
+		return Interval(min_prod, max_prod);
+	}
 
-    // деление интервалов
-    // деление запрещено, если делитель содержит 0
-    Interval operator/(const Interval& other) const {
-        if (other.containsZero()) {
-            throw std::domain_error("Division by interval containing zero");
-        }
+	// РґРµР»РµРЅРёРµ РёРЅС‚РµСЂРІР°Р»РѕРІ
+	// РґРµР»РµРЅРёРµ Р·Р°РїСЂРµС‰РµРЅРѕ, РµСЃР»Рё РґРµР»РёС‚РµР»СЊ СЃРѕРґРµСЂР¶РёС‚ 0
+	Interval operator/(const Interval& other) const {
+		if (other.containsZero()) {
+			throw std::domain_error("Division by interval containing zero");
+		}
 
-        T quotients[4] = {
-            lower / other.lower,
-            lower / other.upper,
-            upper / other.lower,
-            upper / other.upper
-        };
+		T quotients[4] = { lower / other.lower, lower / other.upper,
+						  upper / other.lower, upper / other.upper };
 
-        T min_quot = quotients[0];
-        T max_quot = quotients[0];
-        for (int i = 1; i < 4; ++i) {
-            min_quot = min_val(min_quot, quotients[i]);
-            max_quot = max_val(max_quot, quotients[i]);
-        }
+		T min_quot = quotients[0];
+		T max_quot = quotients[0];
+		for (int i = 1; i < 4; ++i) {
+			min_quot = min_val(min_quot, quotients[i]);
+			max_quot = max_val(max_quot, quotients[i]);
+		}
 
-        return Interval(min_quot, max_quot);
-    }
+		return Interval(min_quot, max_quot);
+	}
 
-    // операции с числовыми константами
-    Interval operator+(T scalar) const { return Interval(lower + scalar, upper + scalar); }
+	// РѕРїРµСЂР°С†РёРё СЃ С‡РёСЃР»РѕРІС‹РјРё РєРѕРЅСЃС‚Р°РЅС‚Р°РјРё
+	Interval operator+(T scalar) const {
+		return Interval(lower + scalar, upper + scalar);
+	}
 
-    Interval operator-(T scalar) const { return Interval(lower - scalar, upper - scalar); }
+	Interval operator-(T scalar) const {
+		return Interval(lower - scalar, upper - scalar);
+	}
 
-    Interval operator*(T scalar) const {
-        if (scalar >= T(0)) { return Interval(lower * scalar, upper * scalar); }
-        else {
-            // Если коэффициент отрицателен — границы меняются местами
-            return Interval(upper * scalar, lower * scalar);
-        }
-    }
+	Interval operator*(T scalar) const {
+		if (scalar >= T(0)) {
+			return Interval(lower * scalar, upper * scalar);
+		}
+		else {
+			// Р•СЃР»Рё РєРѕСЌС„С„РёС†РёРµРЅС‚ РѕС‚СЂРёС†Р°С‚РµР»РµРЅ вЂ” РіСЂР°РЅРёС†С‹ РјРµРЅСЏСЋС‚СЃСЏ РјРµСЃС‚Р°РјРё
+			return Interval(upper * scalar, lower * scalar);
+		}
+	}
 
-    Interval operator/(T scalar) const {
-        if (scalar == T(0)) { throw std::domain_error("Division by zero"); }
+	Interval operator/(T scalar) const {
+		if (scalar == T(0)) {
+			throw std::domain_error("Division by zero");
+		}
 
-        if (scalar > T(0)) { return Interval(lower / scalar, upper / scalar); }
-        else { return Interval(upper / scalar, lower / scalar); }
-    }
+		if (scalar > T(0)) {
+			return Interval(lower / scalar, upper / scalar);
+		}
+		else {
+			return Interval(upper / scalar, lower / scalar);
+		}
+	}
 
-    // операции присваивания
-    Interval& operator+=(const Interval& other) {
-        *this = *this + other;
-        return *this;
-    }
+	// РѕРїРµСЂР°С†РёРё РїСЂРёСЃРІР°РёРІР°РЅРёСЏ
+	Interval& operator+=(const Interval& other) {
+		*this = *this + other;
+		return *this;
+	}
 
-    Interval& operator-=(const Interval& other) {
-        *this = *this - other;
-        return *this;
-    }
+	Interval& operator-=(const Interval& other) {
+		*this = *this - other;
+		return *this;
+	}
 
-    Interval& operator*=(const Interval& other) {
-        *this = *this * other;
-        return *this;
-    }
+	Interval& operator*=(const Interval& other) {
+		*this = *this * other;
+		return *this;
+	}
 
-    Interval& operator/=(const Interval& other) {
-        *this = *this / other;
-        return *this;
-    }
+	Interval& operator/=(const Interval& other) {
+		*this = *this / other;
+		return *this;
+	}
 
-    // Математические функции 
-    // модуль интервала
-    static Interval abs(const Interval& x) {
-        if (x.lower >= T(0)) { return x; }
-        else if (x.upper <= T(0)) { return -x; }
-        else {
-            // Если интервал пересекает 0
-            return Interval(T(0), max_val(-x.lower, x.upper));
-        }
-    }
+	// РњР°С‚РµРјР°С‚РёС‡РµСЃРєРёРµ С„СѓРЅРєС†РёРё
+	// РјРѕРґСѓР»СЊ РёРЅС‚РµСЂРІР°Р»Р°
+	static Interval abs(const Interval& x) {
+		if (x.lower >= T(0)) {
+			return x;
+		}
+		else if (x.upper <= T(0)) {
+			return -x;
+		}
+		else {
+			// Р•СЃР»Рё РёРЅС‚РµСЂРІР°Р» РїРµСЂРµСЃРµРєР°РµС‚ 0
+			return Interval(T(0), max_val(-x.lower, x.upper));
+		}
+	}
 
-    // возведение в целую степень
-    static Interval pow(const Interval& x, int n) {
-        if (n == 0) { return Interval(T(1)); }
-        if (n == 1) { return x; }
-        if (n < 0) { return Interval(T(1)) / pow(x, -n); }
+	// РІРѕР·РІРµРґРµРЅРёРµ РІ С†РµР»СѓСЋ СЃС‚РµРїРµРЅСЊ
+	static Interval pow(const Interval& x, int n) {
+		if (n == 0) {
+			return Interval(T(1));
+		}
+		if (n == 1) {
+			return x;
+		}
+		if (n < 0) {
+			return Interval(T(1)) / pow(x, -n);
+		}
 
-        // чётная степень: минимум может быть 0, если интервал пересекает 0
-        if (n % 2 == 0) {
-            if (x.lower >= T(0)) { return Interval(pow_val(x.lower, n), pow_val(x.upper, n)); }
-            else if (x.upper <= T(0)) { return Interval(pow_val(x.upper, n), pow_val(x.lower, n)); }
-            else {
-                T max_pow = max_val(pow_val(x.lower, n), pow_val(x.upper, n));
-                return Interval(T(0), max_pow);
-            }
-        } else {
-            // Нечётная степень: монотонность сохранена
-            return Interval(pow_val(x.lower, n), pow_val(x.upper, n));
-        }
-    }
+		// С‡С‘С‚РЅР°СЏ СЃС‚РµРїРµРЅСЊ: РјРёРЅРёРјСѓРј РјРѕР¶РµС‚ Р±С‹С‚СЊ 0, РµСЃР»Рё РёРЅС‚РµСЂРІР°Р» РїРµСЂРµСЃРµРєР°РµС‚ 0
+		if (n % 2 == 0) {
+			if (x.lower >= T(0)) {
+				return Interval(pow_val(x.lower, n), pow_val(x.upper, n));
+			}
+			else if (x.upper <= T(0)) {
+				return Interval(pow_val(x.upper, n), pow_val(x.lower, n));
+			}
+			else {
+				T max_pow = max_val(pow_val(x.lower, n), pow_val(x.upper, n));
+				return Interval(T(0), max_pow);
+			}
+		}
+		else {
+			// РќРµС‡С‘С‚РЅР°СЏ СЃС‚РµРїРµРЅСЊ: РјРѕРЅРѕС‚РѕРЅРЅРѕСЃС‚СЊ СЃРѕС…СЂР°РЅРµРЅР°
+			return Interval(pow_val(x.lower, n), pow_val(x.upper, n));
+		}
+	}
 
-    // Пересечение двух интервалов
-    static Interval intersect(const Interval& a, const Interval& b) {
-        T new_lower = max_val(a.lower, b.lower);
-        T new_upper = min_val(a.upper, b.upper);
+	// РџРµСЂРµСЃРµС‡РµРЅРёРµ РґРІСѓС… РёРЅС‚РµСЂРІР°Р»РѕРІ
+	static Interval intersect(const Interval& a, const Interval& b) {
+		T new_lower = max_val(a.lower, b.lower);
+		T new_upper = min_val(a.upper, b.upper);
 
-        if (new_lower > new_upper) {
-            throw std::runtime_error("Intervals do not intersect");
-        }
+		if (new_lower > new_upper) {
+			throw std::runtime_error("Intervals do not intersect");
+		}
 
-        return Interval(new_lower, new_upper);
-    }
+		return Interval(new_lower, new_upper);
+	}
 
-    // Объединение двух интервалов (наименьший интервал, содержащий оба)
-    static Interval hull(const Interval& a, const Interval& b) {
-        return Interval(min_val(a.lower, b.lower), max_val(a.upper, b.upper));
-    }
+	// РћР±СЉРµРґРёРЅРµРЅРёРµ РґРІСѓС… РёРЅС‚РµСЂРІР°Р»РѕРІ (РЅР°РёРјРµРЅСЊС€РёР№ РёРЅС‚РµСЂРІР°Р», СЃРѕРґРµСЂР¶Р°С‰РёР№ РѕР±Р°)
+	static Interval hull(const Interval& a, const Interval& b) {
+		return Interval(min_val(a.lower, b.lower), max_val(a.upper, b.upper));
+	}
 };
 
-// Внешние операции со скалярами (симметричные)
+// Р’РЅРµС€РЅРёРµ РѕРїРµСЂР°С†РёРё СЃРѕ СЃРєР°Р»СЏСЂР°РјРё (СЃРёРјРјРµС‚СЂРёС‡РЅС‹Рµ)
 template <typename T>
 Interval<T> operator+(T scalar, const Interval<T>& interval) {
-    return interval + scalar;
+	return interval + scalar;
 }
 
 template <typename T>
 Interval<T> operator-(T scalar, const Interval<T>& interval) {
-    return Interval<T>(scalar) - interval;
+	return Interval<T>(scalar) - interval;
 }
 
 template <typename T>
 Interval<T> operator*(T scalar, const Interval<T>& interval) {
-    return interval * scalar;
+	return interval * scalar;
 }
 
 template <typename T>
 Interval<T> operator/(T scalar, const Interval<T>& interval) {
-    return Interval<T>(scalar) / interval;
+	return Interval<T>(scalar) / interval;
 }
