@@ -1,6 +1,5 @@
 // Модификация Хосмана для комплексных корней на основе метода Грефе
-// hosman_modification_graeffe - поиск корней без учета кратности (порождает
-// кучу мусора) hosman_with_multiplicities - верся с учетом кратности
+// hosman_modification_graeffe - поиск корней без учета кратности (порождает кучу мусора) hosman_with_multiplicities - верся с учетом кратности
 // Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
 
 #pragma once
