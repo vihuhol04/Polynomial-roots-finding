@@ -1,195 +1,215 @@
-// ‘‡ÈÎ ‰Îˇ ÚÂÒÚËÓ‚‡ÌËˇ ÏÂÚÓ‰‡ —‡„‡ÎÓ‚‡ ñ ÔÓËÒÍ ‚Â˘ÂÒÚ‚ÂÌÌ˚ı ÍÓÌÂÈ
-// –Â‡ÎËÁ‡ˆËˇ: œ‡‚ÎÓ‚‡ ¿Ì‡ÒÚ‡ÒËˇ,  Ã¡Œ-01-22
+// –§–∞–π–ª –¥–ª—è —Ç–µ—Å—Ç–∏—Ä–æ–≤–∞–Ω–∏—è –º–µ—Ç–æ–¥–∞ –°–∞–≥—Ä–∞–ª–æ–≤–∞ ‚Äì –ø–æ–∏—Å–∫ –≤–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã—Ö –∫–æ—Ä–Ω–µ–π
+// –†–µ–∞–ª–∏–∑–∞—Ü–∏—è: –ü–∞–≤–ª–æ–≤–∞ –ê–Ω–∞—Å—Ç–∞—Å–∏—è, –ö–ú–ë–û-01-22
 
-#include "mathUtils.h"
-#include "polynomialUtils.h"
-#include "generate_high_degree_polynomial.h"
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
+#include "NumericConstants.h"
 #include "Sagralov_real_roots.h"
+#include "generate_high_degree_polynomial.h"
 
+
+#include <complex>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
-template<typename fp_t>
+template <typename fp_t>
 void print_real_roots_ground_truth(
-    const vector<fp_t>& real_roots_repeated,
-    const vector<fp_t>& unique_real_roots,
-    const vector<unsigned>& real_root_multiplicities)
-{
-    cout << "»ÒıÓ‰Ì˚Â ‚Â˘ÂÒÚ‚ÂÌÌ˚Â ÍÓÌË (Ò Í‡ÚÌÓÒÚˇÏË): ";
-    for (auto r : real_roots_repeated) cout << r << " ";
-    cout << endl;
+    const vector<fp_t> &real_roots_repeated,
+    const vector<fp_t> &unique_real_roots,
+    const vector<unsigned> &real_root_multiplicities) {
+  cout << "–ò—Å—Ö–æ–¥–Ω—ã–µ –≤–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏ (—Å –∫—Ä–∞—Ç–Ω–æ—Å—Ç—è–º–∏): ";
+  for (auto r : real_roots_repeated)
+    cout << r << " ";
+  cout << endl;
 
-    cout << "”ÌËÍ‡Î¸Ì˚Â ‚Â˘ÂÒÚ‚ÂÌÌ˚Â ÍÓÌË: ";
-    for (size_t i = 0; i < unique_real_roots.size(); ++i)
-        cout << unique_real_roots[i] << " (ÏÛÎ¸ÚËÔÎ. " << real_root_multiplicities[i] << ")  ";
-    cout << endl;
+  cout << "–£–Ω–∏–∫–∞–ª—å–Ω—ã–µ –≤–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏: ";
+  for (size_t i = 0; i < unique_real_roots.size(); ++i)
+    cout << unique_real_roots[i] << " (–º—É–ª—å—Ç–∏–ø–ª. "
+         << real_root_multiplicities[i] << ")  ";
+  cout << endl;
 }
 
 void run_sagralov_tests() {
-    cout << endl << " “≈—“»–Œ¬¿Õ»≈ Ã≈“Œƒ¿ —¿√–¿ÀŒ¬¿ " << endl;
+  cout << endl << " –¢–ï–°–¢–ò–†–û–í–ê–ù–ò–ï –ú–ï–¢–û–î–ê –°–ê–ì–†–ê–õ–û–í–ê " << endl;
 
-    // “≈—“ 1
-    {
-        cout << "\n“≈—“ 1: œÓÒÚ˚Â ‚Â˘ÂÒÚ‚ÂÌÌ˚Â ÍÓÌË (ÒÚÂÔÂÌ¸ 10)" << endl;
+  // –¢–ï–°–¢ 1
+  {
+    cout << "\n–¢–ï–°–¢ 1: –ü—Ä–æ—Å—Ç—ã–µ –≤–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏ (—Å—Ç–µ–ø–µ–Ω—å 10)" << endl;
 
-        unsigned P = 10;
-        unsigned num_complex_pairs = 0;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = { };
-        vector<double> cluster_radii = { };
-        vector<pair<unsigned, unsigned>> multiplicity_groups = {};
-        double default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 12345;
+    unsigned P = 10;
+    unsigned num_complex_pairs = 0;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<double> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    double default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 12345;
 
-        vector<double> coefficients;
-        vector<double> real_roots_repeated;
-        vector<double> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<double>> complex_roots;
+    vector<double> coefficients;
+    vector<double> real_roots_repeated;
+    vector<double> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<double>> complex_roots;
 
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
 
-        double TOLERANCE = 1e-6;
+    double TOLERANCE = numeric_constants::adaptive_epsilon<double>(
+        numeric_constants::EPSILON_SCALE_PRECISE);
 
-        cout << "\n—√≈Õ»–»–Œ¬¿ÕÕ€… œŒÀÃÕŒÃ: \n";
-        print_polynomial(coefficients);
-        print_real_roots_ground_truth(real_roots_repeated, unique_real_roots, real_root_multiplicities);
+    cout << "\n–°–ì–ï–ù–ò–†–ò–†–û–í–ê–ù–ù–´–ô –ü–û–õ–ú–ù–û–ú: \n";
+    print_polynomial(coefficients);
+    print_real_roots_ground_truth(real_roots_repeated, unique_real_roots,
+                                  real_root_multiplicities);
 
-        auto found = find_real_roots_by_Sagralov(coefficients, TOLERANCE);
-        cout << "»ÌÚÂ‚‡Î˚ (—‡„‡ÎÓ‚):\n";
-        for (auto& i : found) cout << "  [" << i.interval.first << ", " << i.interval.second << "]\n";
-    }
+    auto found = find_real_roots_by_Sagralov(coefficients, TOLERANCE);
+    cout << "–ò–Ω—Ç–µ—Ä–≤–∞–ª—ã (–°–∞–≥—Ä–∞–ª–æ–≤):\n";
+    for (auto &i : found)
+      cout << "  [" << i.interval.first << ", " << i.interval.second << "]\n";
+  }
 
-    // “≈—“ 2
-    {
-        cout << "\n“≈—“ 2:  ‡ÚÌ˚Â ÍÓÌË float_precision" << endl;
+  // –¢–ï–°–¢ 2
+  {
+    cout << "\n–¢–ï–°–¢ 2: –ö—Ä–∞—Ç–Ω—ã–µ –∫–æ—Ä–Ω–∏ float_precision" << endl;
 
-        unsigned P = 12;
-        unsigned num_complex_pairs = 0;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = { };
-        vector<float_precision> cluster_radii = { };
-        vector<pair<unsigned, unsigned>> multiplicity_groups = { {2, 3}, {1, 2} };
-        float_precision default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 12345;
+    unsigned P = 12;
+    unsigned num_complex_pairs = 0;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<float_precision> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {{2, 3}, {1, 2}};
+    float_precision default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 12345;
 
-        vector<float_precision> coefficients;
-        vector<float_precision> real_roots_repeated;
-        vector<float_precision> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<float_precision>> complex_roots;
+    vector<float_precision> coefficients;
+    vector<float_precision> real_roots_repeated;
+    vector<float_precision> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<float_precision>> complex_roots;
 
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
 
-        float_precision TOLERANCE = 1e-6;
+    float_precision TOLERANCE =
+        numeric_constants::adaptive_epsilon<float_precision>(
+            numeric_constants::EPSILON_SCALE_PRECISE);
 
-        cout << "\n—√≈Õ»–»–Œ¬¿ÕÕ€… œŒÀÃÕŒÃ: \n";
-        print_polynomial(coefficients);
-        print_real_roots_ground_truth(real_roots_repeated, unique_real_roots, real_root_multiplicities);
+    cout << "\n–°–ì–ï–ù–ò–†–ò–†–û–í–ê–ù–ù–´–ô –ü–û–õ–ú–ù–û–ú: \n";
+    print_polynomial(coefficients);
+    print_real_roots_ground_truth(real_roots_repeated, unique_real_roots,
+                                  real_root_multiplicities);
 
-        auto found = find_real_roots_by_Sagralov(coefficients, TOLERANCE);
-        cout << "»ÌÚÂ‚‡Î˚ (—‡„‡ÎÓ‚):\n";
-        for (auto& i : found) cout << "  [" << i.interval.first << ", " << i.interval.second << "]\n";
-    }
+    auto found = find_real_roots_by_Sagralov(coefficients, TOLERANCE);
+    cout << "–ò–Ω—Ç–µ—Ä–≤–∞–ª—ã (–°–∞–≥—Ä–∞–ª–æ–≤):\n";
+    for (auto &i : found)
+      cout << "  [" << i.interval.first << ", " << i.interval.second << "]\n";
+  }
 
-    // “≈—“ 3
-    {
-        cout << "\n“≈—“ 3:  Î‡ÒÚÂ˚ ÍÓÌÂÈ float_precision" << endl;
+  // –¢–ï–°–¢ 3
+  {
+    cout << "\n–¢–ï–°–¢ 3: –ö–ª–∞—Å—Ç–µ—Ä—ã –∫–æ—Ä–Ω–µ–π float_precision" << endl;
 
-        unsigned P = 15;
-        unsigned num_complex_pairs = 0;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = { 3, 4 };
-        vector<float_precision> cluster_radii = { 0.0001, 0.001 };
-        vector<pair<unsigned, unsigned>> multiplicity_groups = { };
-        float_precision default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 9876;
+    unsigned P = 15;
+    unsigned num_complex_pairs = 0;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {3, 4};
+    vector<float_precision> cluster_radii = {0.0001, 0.001};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    float_precision default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 9876;
 
-        vector<float_precision> coefficients;
-        vector<float_precision> real_roots_repeated;
-        vector<float_precision> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<float_precision>> complex_roots;
+    vector<float_precision> coefficients;
+    vector<float_precision> real_roots_repeated;
+    vector<float_precision> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<float_precision>> complex_roots;
 
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
 
-        float_precision TOLERANCE = 1e-12;
+    float_precision TOLERANCE =
+        numeric_constants::adaptive_epsilon<float_precision>(
+            numeric_constants::EPSILON_SCALE_COARSE * 5);
 
-        cout << "\n—√≈Õ»–»–Œ¬¿ÕÕ€… œŒÀÃÕŒÃ: \n";
-        print_polynomial(coefficients);
-        print_real_roots_ground_truth(real_roots_repeated, unique_real_roots, real_root_multiplicities);
+    cout << "\n–°–ì–ï–ù–ò–†–ò–†–û–í–ê–ù–ù–´–ô –ü–û–õ–ú–ù–û–ú: \n";
+    print_polynomial(coefficients);
+    print_real_roots_ground_truth(real_roots_repeated, unique_real_roots,
+                                  real_root_multiplicities);
 
-        auto found = find_real_roots_by_Sagralov(coefficients, TOLERANCE);
-        cout << "»ÌÚÂ‚‡Î˚ (—‡„‡ÎÓ‚):\n";
-        for (auto& i : found) cout << "  [" << i.interval.first << ", " << i.interval.second << "]\n";
-    }
+    auto found = find_real_roots_by_Sagralov(coefficients, TOLERANCE);
+    cout << "–ò–Ω—Ç–µ—Ä–≤–∞–ª—ã (–°–∞–≥—Ä–∞–ª–æ–≤):\n";
+    for (auto &i : found)
+      cout << "  [" << i.interval.first << ", " << i.interval.second << "]\n";
+  }
 
-    // “≈—“ 4
-    {
-        cout << "\n“≈—“ 4: ¬˚ÒÓÍ‡ˇ ÒÚÂÔÂÌ¸ (30)" << endl;
+  // –¢–ï–°–¢ 4
+  {
+    cout << "\n–¢–ï–°–¢ 4: –í—ã—Å–æ–∫–∞—è —Å—Ç–µ–ø–µ–Ω—å (30)" << endl;
 
-        unsigned P = 30;
-        unsigned num_complex_pairs = 0;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = { };
-        vector<float_precision> cluster_radii = { };
-        vector<pair<unsigned, unsigned>> multiplicity_groups = { };
-        float_precision default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 4567;
+    unsigned P = 30;
+    unsigned num_complex_pairs = 0;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<float_precision> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    float_precision default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 4567;
 
-        vector<float_precision> coefficients;
-        vector<float_precision> real_roots_repeated;
-        vector<float_precision> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<float_precision>> complex_roots;
+    vector<float_precision> coefficients;
+    vector<float_precision> real_roots_repeated;
+    vector<float_precision> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<float_precision>> complex_roots;
 
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
 
-        float_precision TOLERANCE = 1e-12;
+    float_precision TOLERANCE =
+        numeric_constants::adaptive_epsilon<float_precision>(
+            numeric_constants::EPSILON_SCALE_COARSE * 5);
 
-        cout << "\n—√≈Õ»–»–Œ¬¿ÕÕ€… œŒÀÃÕŒÃ: \n";
-        print_polynomial(coefficients);
-        print_real_roots_ground_truth(real_roots_repeated, unique_real_roots, real_root_multiplicities);
+    cout << "\n–°–ì–ï–ù–ò–†–ò–†–û–í–ê–ù–ù–´–ô –ü–û–õ–ú–ù–û–ú: \n";
+    print_polynomial(coefficients);
+    print_real_roots_ground_truth(real_roots_repeated, unique_real_roots,
+                                  real_root_multiplicities);
 
-        auto found = find_real_roots_by_Sagralov(coefficients, TOLERANCE);
-        cout << "»ÌÚÂ‚‡Î˚ (—‡„‡ÎÓ‚):\n";
-        for (auto& i : found) cout << "  [" << i.interval.first << ", " << i.interval.second << "]\n";
-    }
+    auto found = find_real_roots_by_Sagralov(coefficients, TOLERANCE);
+    cout << "–ò–Ω—Ç–µ—Ä–≤–∞–ª—ã (–°–∞–≥—Ä–∞–ª–æ–≤):\n";
+    for (auto &i : found)
+      cout << "  [" << i.interval.first << ", " << i.interval.second << "]\n";
+  }
 }
 
 int main() {
-    setlocale(LC_ALL, "Russian");
-    try {
-        run_sagralov_tests();
-        return EXIT_SUCCESS;
-    }
-    catch (const exception& e) {
-        cerr << "Œÿ»¡ ¿: " << e.what() << endl;
-        return EXIT_FAILURE;
-    }
+  setlocale(LC_ALL, "ru_RU.UTF-8");
+  try {
+    run_sagralov_tests();
+    return EXIT_SUCCESS;
+  } catch (const exception &e) {
+    cerr << "–û–®–ò–ë–ö–ê: " << e.what() << endl;
+    return EXIT_FAILURE;
+  }
 }

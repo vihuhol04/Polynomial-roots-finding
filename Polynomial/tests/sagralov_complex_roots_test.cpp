@@ -1,101 +1,103 @@
-// Ôàéë äëÿ òåñòèğîâàíèÿ ìåòîäà Ñàãğàëîâà – ïîèñê êîìïëåêñíûõ êîğíåé
-// Ğåàëèçàöèÿ: Ïàâëîâà Àíàñòàñèÿ, ÊÌÁÎ-01-22
+// Ğ¤Ğ°Ğ¹Ğ» Ğ´Ğ»Ñ Ñ‚ĞµÑÑ‚Ğ¸Ñ€Ğ¾Ğ²Ğ°Ğ½Ğ¸Ñ Ğ¼ĞµÑ‚Ğ¾Ğ´Ğ° Ğ¡Ğ°Ğ³Ñ€Ğ°Ğ»Ğ¾Ğ²Ğ° â€“ Ğ¿Ğ¾Ğ¸ÑĞº ĞºĞ¾Ğ¼Ğ¿Ğ»ĞµĞºÑĞ½Ñ‹Ñ… ĞºĞ¾Ñ€Ğ½ĞµĞ¹
+// Ğ ĞµĞ°Ğ»Ğ¸Ğ·Ğ°Ñ†Ğ¸Ñ: ĞŸĞ°Ğ²Ğ»Ğ¾Ğ²Ğ° ĞĞ½Ğ°ÑÑ‚Ğ°ÑĞ¸Ñ, ĞšĞœĞ‘Ğ-01-22
 
-#include "mathUtils.h"
-#include "polynomialUtils.h"
-#include "generate_high_degree_polynomial.h"
 #include "Sagralov_complex_roots.h"
+#include "generate_high_degree_polynomial.h"
+#include <complex>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 
 void run_sagralov_tests() {
-    cout << endl << "ÒÅÑÒÈĞÎÂÀÍÈÅ ÌÅÒÎÄÀ ÑÀÃĞÀËÎÂÀ ÄËß ÊÎÌÏËÅÊÑÍÛÕ ÊÎĞÍÅÉ" << endl;
+  cout << endl
+       << "Ğ¢Ğ•Ğ¡Ğ¢Ğ˜Ğ ĞĞ’ĞĞĞ˜Ğ• ĞœĞ•Ğ¢ĞĞ”Ğ Ğ¡ĞĞ“Ğ ĞĞ›ĞĞ’Ğ Ğ”Ğ›Ğ¯ ĞšĞĞœĞŸĞ›Ğ•ĞšĞ¡ĞĞ«Ğ¥ ĞšĞĞ ĞĞ•Ğ™" << endl;
 
-    // ÒÅÑÒ 1
-    {
-        cout << "\nÒÅÑÒ 1: Ïğîñòûå êîìïëåêñíûå êîğíè (ñòåïåíü 10)" << endl;
+  // Ğ¢Ğ•Ğ¡Ğ¢ 1
+  {
+    cout << "\nĞ¢Ğ•Ğ¡Ğ¢ 1: ĞŸÑ€Ğ¾ÑÑ‚Ñ‹Ğµ ĞºĞ¾Ğ¼Ğ¿Ğ»ĞµĞºÑĞ½Ñ‹Ğµ ĞºĞ¾Ñ€Ğ½Ğ¸ (ÑÑ‚ĞµĞ¿ĞµĞ½ÑŒ 10)" << endl;
 
-        unsigned P = 10;
-        unsigned num_complex_pairs = 5;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = { };
-        vector<double> cluster_radii = { };
-        vector<pair<unsigned, unsigned>> multiplicity_groups = {};
-        double default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 12345;
+    unsigned P = 10;
+    unsigned num_complex_pairs = 5;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<double> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    double default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 12345;
 
-        vector<double> coefficients;
-        vector<double> real_roots_repeated;
-        vector<double> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<double>> complex_roots;
+    vector<double> coefficients;
+    vector<double> real_roots_repeated;
+    vector<double> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<double>> complex_roots;
 
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
 
-        double TOLERANCE = 1e-6;
+    cout << "\nĞ¡Ğ“Ğ•ĞĞ˜Ğ Ğ˜Ğ ĞĞ’ĞĞĞĞ«Ğ™ ĞŸĞĞ›ĞœĞĞĞœ: \n";
+    print_polynomial(coefficients);
 
-        cout << "\nÑÃÅÍÈĞÈĞÎÂÀÍÍÛÉ ÏÎËÌÍÎÌ: \n";
-        print_polynomial(coefficients);
+    auto disks = CIsolate<double, long double>(coefficients);
+    cout << "Ğ˜Ğ½Ñ‚ĞµÑ€Ğ²Ğ°Ğ»Ñ‹ (Ğ¡Ğ°Ğ³Ñ€Ğ°Ğ»Ğ¾Ğ²):\n";
+    for (auto &i : disks)
+      cout << "Ğ¦ĞµĞ½Ñ‚Ñ€: " << i.center
+           << "      ĞšĞ¾Ğ»Ğ¸Ñ‡ĞµÑÑ‚Ğ²Ğ¾ ĞºĞ¾Ñ€Ğ½ĞµĞ¹ Ğ² Ğ´Ğ¸ÑĞºĞµ: " << i.num_roots
+           << "    Ğ Ğ°Ğ´Ğ¸ÑƒÑ Ğ´Ğ¸ÑĞºĞ°: " << i.radius << "\n";
+  }
 
-        auto disks = CIsolate<double, long double>(coefficients);
-        cout << "Èíòåğâàëû (Ñàãğàëîâ):\n";
-        for (auto& i : disks) 
-            cout << "Öåíòğ: " << i.center << "      Êîëè÷åñòâî êîğíåé â äèñêå: " << i.num_roots << "    Ğàäèóñ äèñêà: " << i.radius << "\n";
-    }
+  // Ğ¢Ğ•Ğ¡Ğ¢ 2
+  // Ğ¢Ğ•Ğ¡Ğ¢ 2
+  {
+    cout << "\nĞ¢Ğ•Ğ¡Ğ¢ 2: Ğ’Ñ‹ÑĞ¾ĞºĞ°Ñ ÑÑ‚ĞµĞ¿ĞµĞ½ÑŒ (30) float_precision" << endl;
 
-    // ÒÅÑÒ 2
-    /* {
-        cout << "\nÒÅÑÒ 2: Âûñîêàÿ ñòåïåíü (30) float_precision" << endl;
+    unsigned P = 30;
+    unsigned num_complex_pairs = 15;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<float_precision> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    float_precision default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 12345;
 
-        unsigned P = 30;
-        unsigned num_complex_pairs = 15;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = { };
-        vector<float_precision> cluster_radii = { };
-        vector<pair<unsigned, unsigned>> multiplicity_groups = {};
-        float_precision default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 12345;
+    vector<float_precision> coefficients;
+    vector<float_precision> real_roots_repeated;
+    vector<float_precision> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<float_precision>> complex_roots;
 
-        vector<float_precision> coefficients;
-        vector<float_precision> real_roots_repeated;
-        vector<float_precision> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<float_precision>> complex_roots;
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
 
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
+    float_precision TOLERANCE = 1e-6;
 
-        float_precision TOLERANCE = 1e-6;
+    cout << "\nĞ¡Ğ“Ğ•ĞĞ˜Ğ Ğ˜Ğ ĞĞ’ĞĞĞĞ«Ğ™ ĞŸĞĞ›ĞœĞĞĞœ: \n";
+    print_polynomial(coefficients);
 
-        cout << "\nÑÃÅÍÈĞÈĞÎÂÀÍÍÛÉ ÏÎËÌÍÎÌ: \n";
-        print_polynomial(coefficients);
-
-        auto disks = CIsolate<float_precision, float_precision>(coefficients);
-        cout << "Èíòåğâàëû (Ñàãğàëîâ):\n";
-        for (auto& i : disks)
-            cout << "Öåíòğ: " << i.center << "      Êîëè÷åñòâî êîğíåé â äèñêå: " << i.num_roots << "    Ğàäèóñ äèñêà: " << i.radius << "\n";
-    }*/
+    auto disks = CIsolate<float_precision, float_precision>(coefficients);
+    cout << "Ğ˜Ğ½Ñ‚ĞµÑ€Ğ²Ğ°Ğ»Ñ‹ (Ğ¡Ğ°Ğ³Ñ€Ğ°Ğ»Ğ¾Ğ²):\n";
+    for (auto &i : disks)
+      cout << "Ğ¦ĞµĞ½Ñ‚Ñ€: " << i.center
+           << "      ĞšĞ¾Ğ»Ğ¸Ñ‡ĞµÑÑ‚Ğ²Ğ¾ ĞºĞ¾Ñ€Ğ½ĞµĞ¹ Ğ² Ğ´Ğ¸ÑĞºĞµ: " << i.num_roots
+           << "    Ğ Ğ°Ğ´Ğ¸ÑƒÑ Ğ´Ğ¸ÑĞºĞ°: " << i.radius << "\n";
+  }
 }
 
 int main() {
-    setlocale(LC_ALL, "Russian");
-    try {
-        run_sagralov_tests();
-        return EXIT_SUCCESS;
-    }
-    catch (const exception& e) {
-        cerr << "ÎØÈÁÊÀ: " << e.what() << endl;
-        return EXIT_FAILURE;
-    }
+  setlocale(LC_ALL, "ru_RU.UTF-8");
+  try {
+    run_sagralov_tests();
+    return EXIT_SUCCESS;
+  } catch (const exception &e) {
+    cerr << "ĞĞ¨Ğ˜Ğ‘ĞšĞ: " << e.what() << endl;
+    return EXIT_FAILURE;
+  }
 }

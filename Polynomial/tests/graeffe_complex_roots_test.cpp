@@ -1,362 +1,388 @@
-// ‘‡ÈÎ ‰Îˇ ÚÂÒÚËÓ‚‡ÌËˇ ÏÓ‰ËÙËÍ‡ˆËË ’ÓÒÏ‡Ì‡ ÏÂÚÓ‰‡ √ÂÙÂ
-// –Â‡ÎËÁ‡ˆËˇ: œ‡‚ÎÓ‚‡ ¿Ì‡ÒÚ‡ÒËˇ,  Ã¡Œ-01-22
+// –§–∞–π–ª –¥–ª—è —Ç–µ—Å—Ç–∏—Ä–æ–≤–∞–Ω–∏—è –º–æ–¥–∏—Ñ–∏–∫–∞—Ü–∏–∏ –•–æ—Å–º–∞–Ω–∞ –º–µ—Ç–æ–¥–∞ –ì—Ä–µ—Ñ–µ
+// –†–µ–∞–ª–∏–∑–∞—Ü–∏—è: –ü–∞–≤–ª–æ–≤–∞ –ê–Ω–∞—Å—Ç–∞—Å–∏—è, –ö–ú–ë–û-01-22
 
-#include "mathUtils.h"
-#include "polynomialUtils.h"
+#include <complex>
+#include <cstdint>
+#include <iostream>
+#include <vector>
+
+#include "NumericConstants.h"
+#include "fprecision.h"
 #include "generate_high_degree_polynomial.h"
-#include "Graeffe_complex_roots.h"
+#include "methods/Graeffe/Graeffe_complex_roots.h"
+#include "methods/Graeffe/Graeffe_real_roots.h"
 
 using namespace std;
 
-// ŒÒÌÓ‚Ì‡ˇ ÙÛÌÍˆËˇ ÚÂÒÚËÓ‚‡ÌËˇ - „ÂÌÂËÛÂÚ ÔÓÎËÌÓÏ˚ Ë ÚÂÒÚËÛÂÚ ÏÂÚÓ‰ ’ÓÒÏ‡Ì‡
+// –û—Å–Ω–æ–≤–Ω–∞—è —Ñ—É–Ω–∫—Ü–∏—è —Ç–µ—Å—Ç–∏—Ä–æ–≤–∞–Ω–∏—è - –≥–µ–Ω–µ—Ä–∏—Ä—É–µ—Ç –ø–æ–ª–∏–Ω–æ–º—ã –∏ —Ç–µ—Å—Ç–∏—Ä—É–µ—Ç –º–µ—Ç–æ–¥ –•–æ—Å–º–∞–Ω–∞
 void run_hosman_tests() {
-    // “≈—“ 1
-    {
-        cout << "“≈—“ 1: œÓÎËÌÓÏ Ò 2 ÒÓÔˇÊÂÌÌ˚ÏË Ô‡‡ÏË" << endl;
+  // –¢–ï–°–¢ 1
+  {
+    cout << "–¢–ï–°–¢ 1: –ü–æ–ª–∏–Ω–æ–º —Å 2 —Å–æ–ø—Ä—è–∂–µ–Ω–Ω—ã–º–∏ –ø–∞—Ä–∞–º–∏" << endl;
 
-        unsigned P = 4;
-        unsigned num_complex_pairs = 2;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = {};
-        vector<double> cluster_radii = {};
-        vector<pair<unsigned, unsigned>> multiplicity_groups = {};
-        double default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 12345;
+    unsigned P = 4;
+    unsigned num_complex_pairs = 2;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<double> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    double default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 12345;
 
-        vector<double> coefficients;
-        vector<double> real_roots_repeated;
-        vector<double> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<double>> complex_roots;
+    vector<double> coefficients;
+    vector<double> real_roots_repeated;
+    vector<double> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<double>> complex_roots;
 
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
 
-        cout << "—√≈Õ≈–»–Œ¬¿ÕÕ€… œŒÀ»ÕŒÃ:" << endl;
-        cout << "—ÚÂÔÂÌ¸: " << P << endl;
-        cout << "œÓÎËÌÓÏ: ";
-        print_polynomial(coefficients);
-        cout << endl;
+    cout << "–°–ì–ï–ù–ï–†–ò–†–û–í–ê–ù–ù–´–ô –ü–û–õ–ò–ù–û–ú:" << endl;
+    cout << "–°—Ç–µ–ø–µ–Ω—å: " << P << endl;
+    cout << "–ü–æ–ª–∏–Ω–æ–º: ";
+    print_polynomial(coefficients);
+    cout << endl;
 
-        reverse(coefficients.begin(), coefficients.end());
-        vector<double> coefficients_1 = coefficients;
+    reverse(coefficients.begin(), coefficients.end());
+    vector<double> coefficients_1 = coefficients;
 
-        cout << "»—’ŒƒÕ€≈  Œ–Õ»:" << endl;
-        cout << "¬Â˘ÂÒÚ‚ÂÌÌ˚Â ÍÓÌË: ";
-        for (auto root : real_roots_repeated) {
-            cout << root << " ";
-        }
-        cout << endl;
-
-        cout << " ÓÏÔÎÂÍÒÌ˚Â ÍÓÌË (ÒÓÔˇÊÂÌÌ˚Â Ô‡˚):" << endl;
-        if (complex_roots.empty()) {
-            cout << "  ÌÂÚ" << endl;
-        } else {
-            for (size_t i = 0; i < complex_roots.size(); i += 2) {
-                cout << "  " << complex_roots[i] << " Ë " << complex_roots[i + 1] << endl;
-            }
-        }
-        cout << endl;
-
-        cout << "¬€◊»—À≈Õ»≈ Ã≈“ŒƒŒÃ ’Œ—Ã¿Õ¿ (·‡ÁÓ‚‡ˇ ‚ÂÒËˇ):" << endl;
-        double epsilon = 1e-6;
-
-        // ¬˚˜ËÒÎÂÌËÂ ÍÓÌÂÈ ÏÂÚÓ‰ÓÏ ’ÓÒÏ‡Ì‡ (·‡ÁÓ‚‡ˇ ‚ÂÒËˇ)
-        vector<complex<double>> hosman_roots = hosman_modification_graeffe(coefficients, epsilon);
-        cout << "Õ‡È‰ÂÌÓ ÍÓÌÂÈ: " << hosman_roots.size() << endl;
-        cout << "¬˚˜ËÒÎÂÌÌ˚Â ÍÓÌË:" << endl;
-        for (size_t i = 0; i < hosman_roots.size(); ++i) {
-            cout << "  " << i + 1 << ": " << hosman_roots[i] << endl;
-        }
-        cout << endl;
-
-        // “≈—“»–Œ¬¿Õ»≈ Ã≈“Œƒ¿ HOSMAN_WITH_MULTIPLICITIES
-        cout << "¬€◊»—À≈Õ»≈ Ã≈“ŒƒŒÃ ’Œ—Ã¿Õ¿ —  –¿“ÕŒ—“ﬂÃ»:" << endl;
-
-        auto found_graeffe = find_moduli_with_multiplicities_by_graeffe(coefficients_1, epsilon);
-        std::cout << " ÓÌË ‚Â˘ÂÒÚ‚ÂÌÌ˚Â (√ÂÙ):\n";
-        for (const auto& root : found_graeffe) {
-            std::cout << "root: " << root.value << "    mult: " << root.multiplicity << "\n";
-        }
-        std::cout << "\n";
-
-        auto found_graeffe_complex = hosman_with_multiplicities(coefficients_1, found_graeffe, epsilon);
-        std::cout << " ÓÌË ÍÓÏÔÎÂÍÒÌ˚Â (’ÓÒÏ‡Ì):\n";
-        for (auto& r : found_graeffe_complex) {
-            std::cout << r.real() << " " << r.imag() << "i\n";
-        }
+    cout << "–ò–°–•–û–î–ù–´–ï –ö–û–†–ù–ò:" << endl;
+    cout << "–í–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏: ";
+    for (auto root : real_roots_repeated) {
+      cout << root << " ";
     }
+    cout << endl;
 
-    // “≈—“ 2
-    {
-        cout << "“≈—“ 2: œÓÎËÌÓÏ Ò 10 ÒÓÔˇÊÂÌÌ˚ÏË Ô‡‡ÏË (precision source)" << endl;
-
-        unsigned P = 20;
-        unsigned num_complex_pairs = 10;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = {};
-        vector<float_precision> cluster_radii = {};
-        vector<pair<unsigned, unsigned>> multiplicity_groups = {};
-        float_precision default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 951;
-
-        vector<float_precision> coefficients;
-        vector<float_precision> real_roots_repeated;
-        vector<float_precision> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<float_precision>> complex_roots;
-
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
-
-        cout << "—√≈Õ≈–»–Œ¬¿ÕÕ€… œŒÀ»ÕŒÃ:" << endl;
-        cout << "—ÚÂÔÂÌ¸: " << P << endl;
-        cout << "œÓÎËÌÓÏ: ";
-        print_polynomial(coefficients);
-        cout << endl;
-
-        reverse(coefficients.begin(), coefficients.end());
-        vector<float_precision> coefficients_1 = coefficients;
-
-        cout << "»—’ŒƒÕ€≈  Œ–Õ»:" << endl;
-        cout << "¬Â˘ÂÒÚ‚ÂÌÌ˚Â ÍÓÌË: ";
-        for (auto root : real_roots_repeated) {
-            cout << root << " ";
-        }
-        cout << endl;
-
-        cout << " ÓÏÔÎÂÍÒÌ˚Â ÍÓÌË (ÒÓÔˇÊÂÌÌ˚Â Ô‡˚):" << endl;
-        if (complex_roots.empty()) {
-            cout << "  ÌÂÚ" << endl;
-        }
-        else {
-            for (size_t i = 0; i < complex_roots.size(); i += 2) {
-                cout << "  " << complex_roots[i] << " Ë " << complex_roots[i + 1] << endl;
-            }
-        }
-        cout << endl;
-
-        cout << "¬€◊»—À≈Õ»≈ Ã≈“ŒƒŒÃ ’Œ—Ã¿Õ¿ (·‡ÁÓ‚‡ˇ ‚ÂÒËˇ):" << endl;
-        float_precision epsilon = 1e-12;
-
-        // ¬˚˜ËÒÎÂÌËÂ ÍÓÌÂÈ ÏÂÚÓ‰ÓÏ ’ÓÒÏ‡Ì‡ (·‡ÁÓ‚‡ˇ ‚ÂÒËˇ)
-        vector<complex<float_precision>> hosman_roots = hosman_modification_graeffe(coefficients, epsilon);
-        cout << "Õ‡È‰ÂÌÓ ÍÓÌÂÈ: " << hosman_roots.size() << endl;
-        cout << "¬˚˜ËÒÎÂÌÌ˚Â ÍÓÌË:" << endl;
-        for (size_t i = 0; i < hosman_roots.size(); ++i) {
-            cout << "  " << i + 1 << ": " << hosman_roots[i] << endl;
-        }
-        cout << endl;
-
-        // “≈—“»–Œ¬¿Õ»≈ Ã≈“Œƒ¿ HOSMAN_WITH_MULTIPLICITIES
-        cout << "¬€◊»—À≈Õ»≈ Ã≈“ŒƒŒÃ ’Œ—Ã¿Õ¿ —  –¿“ÕŒ—“ﬂÃ»:" << endl;
-
-        auto found_graeffe = find_moduli_with_multiplicities_by_graeffe(coefficients_1, epsilon);
-        std::cout << " ÓÌË ‚Â˘ÂÒÚ‚ÂÌÌ˚Â (√ÂÙ):\n";
-        for (const auto& root : found_graeffe) {
-            std::cout << "root: " << root.value << "    mult: " << root.multiplicity << "\n";
-        }
-        std::cout << "\n";
-
-        auto found_graeffe_complex = hosman_with_multiplicities(coefficients_1, found_graeffe, epsilon);
-        std::cout << " ÓÌË ÍÓÏÔÎÂÍÒÌ˚Â (’ÓÒÏ‡Ì):\n";
-        for (auto& r : found_graeffe_complex) {
-            std::cout << r.real() << " " << r.imag() << "i\n";
-        }
+    cout << "–ö–æ–º–ø–ª–µ–∫—Å–Ω—ã–µ –∫–æ—Ä–Ω–∏ (—Å–æ–ø—Ä—è–∂–µ–Ω–Ω—ã–µ –ø–∞—Ä—ã):" << endl;
+    if (complex_roots.empty()) {
+      cout << "  –Ω–µ—Ç" << endl;
+    } else {
+      for (size_t i = 0; i < complex_roots.size(); i += 2) {
+        cout << "  " << complex_roots[i] << " –∏ " << complex_roots[i + 1]
+             << endl;
+      }
     }
+    cout << endl;
 
-    // “≈—“ 3
-    {
-        cout << "“≈—“ 3: œÓÎËÌÓÏ ÒÓ ÒÏÂ¯‡ÌÌ˚ÏË ÍÓÌˇÏË" << endl;
+    cout << "–í–´–ß–ò–°–õ–ï–ù–ò–ï –ú–ï–¢–û–î–û–ú –•–û–°–ú–ê–ù–ê (–±–∞–∑–æ–≤–∞—è –≤–µ—Ä—Å–∏—è):" << endl;
+    double epsilon = numeric_constants::adaptive_epsilon<double>(
+        numeric_constants::EPSILON_SCALE_PRECISE);
 
-        unsigned P = 10;
-        unsigned num_complex_pairs = 3;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = {};
-        vector<double> cluster_radii = {};
-        vector<pair<unsigned, unsigned>> multiplicity_groups = {};
-        double default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 5291;
-
-        vector<double> coefficients;
-        vector<double> real_roots_repeated;
-        vector<double> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<double>> complex_roots;
-
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
-
-        cout << "—√≈Õ≈–»–Œ¬¿ÕÕ€… œŒÀ»ÕŒÃ:" << endl;
-        cout << "—ÚÂÔÂÌ¸: " << P << endl;
-        cout << "œÓÎËÌÓÏ: ";
-        print_polynomial(coefficients);
-        cout << endl;
-
-        reverse(coefficients.begin(), coefficients.end());
-        vector<double> coefficients_1 = coefficients;
-
-        cout << "»—’ŒƒÕ€≈  Œ–Õ»:" << endl;
-        cout << "¬Â˘ÂÒÚ‚ÂÌÌ˚Â ÍÓÌË: ";
-        for (auto root : real_roots_repeated) {
-            cout << root << " ";
-        }
-        cout << endl;
-
-        cout << " ÓÏÔÎÂÍÒÌ˚Â ÍÓÌË (ÒÓÔˇÊÂÌÌ˚Â Ô‡˚):" << endl;
-        if (complex_roots.empty()) {
-            cout << "  ÌÂÚ" << endl;
-        }
-        else {
-            for (size_t i = 0; i < complex_roots.size(); i += 2) {
-                cout << "  " << complex_roots[i] << " Ë " << complex_roots[i + 1] << endl;
-            }
-        }
-        cout << endl;
-
-        cout << "¬€◊»—À≈Õ»≈ Ã≈“ŒƒŒÃ ’Œ—Ã¿Õ¿ (·‡ÁÓ‚‡ˇ ‚ÂÒËˇ):" << endl;
-        double epsilon = 1e-6;
-
-        // ¬˚˜ËÒÎÂÌËÂ ÍÓÌÂÈ ÏÂÚÓ‰ÓÏ ’ÓÒÏ‡Ì‡ (·‡ÁÓ‚‡ˇ ‚ÂÒËˇ)
-        vector<complex<double>> hosman_roots = hosman_modification_graeffe(coefficients, epsilon);
-        cout << "Õ‡È‰ÂÌÓ ÍÓÌÂÈ: " << hosman_roots.size() << endl;
-        cout << "¬˚˜ËÒÎÂÌÌ˚Â ÍÓÌË:" << endl;
-        for (size_t i = 0; i < hosman_roots.size(); ++i) {
-            cout << "  " << i + 1 << ": " << hosman_roots[i] << endl;
-        }
-        cout << endl;
-
-        // “≈—“»–Œ¬¿Õ»≈ Ã≈“Œƒ¿ HOSMAN_WITH_MULTIPLICITIES
-        cout << "¬€◊»—À≈Õ»≈ Ã≈“ŒƒŒÃ ’Œ—Ã¿Õ¿ —  –¿“ÕŒ—“ﬂÃ»:" << endl;
-
-        auto found_graeffe = find_moduli_with_multiplicities_by_graeffe(coefficients_1, epsilon);
-        std::cout << " ÓÌË ‚Â˘ÂÒÚ‚ÂÌÌ˚Â (√ÂÙ):\n";
-        for (const auto& root : found_graeffe) {
-            std::cout << "root: " << root.value << "    mult: " << root.multiplicity << "\n";
-        }
-        std::cout << "\n";
-
-        auto found_graeffe_complex = hosman_with_multiplicities(coefficients_1, found_graeffe, epsilon);
-        std::cout << " ÓÌË ÍÓÏÔÎÂÍÒÌ˚Â (’ÓÒÏ‡Ì):\n";
-        for (auto& r : found_graeffe_complex) {
-            std::cout << r.real() << " " << r.imag() << "i\n";
-        }
+    // –í—ã—á–∏—Å–ª–µ–Ω–∏–µ –∫–æ—Ä–Ω–µ–π –º–µ—Ç–æ–¥–æ–º –•–æ—Å–º–∞–Ω–∞ (–±–∞–∑–æ–≤–∞—è –≤–µ—Ä—Å–∏—è)
+    vector<complex<double>> hosman_roots =
+        hosman_modification_graeffe(coefficients, epsilon, 20, true);
+    cout << "–ù–∞–π–¥–µ–Ω–æ –∫–æ—Ä–Ω–µ–π: " << hosman_roots.size() << endl;
+    cout << "–í—ã—á–∏—Å–ª–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏:" << endl;
+    for (size_t i = 0; i < hosman_roots.size(); ++i) {
+      cout << "  " << i + 1 << ": " << hosman_roots[i] << endl;
     }
+    cout << endl;
 
-    // “≈—“ 4
-    {
-        cout << "“≈—“ 4: œÓÎËÌÓÏ ÒÓ ÒÏÂ¯‡ÌÌ˚ÏË ÍÓÌˇÏË (precision source)" << endl;
+    // –¢–ï–°–¢–ò–†–û–í–ê–ù–ò–ï –ú–ï–¢–û–î–ê HOSMAN_WITH_MULTIPLICITIES
+    cout << "–í–´–ß–ò–°–õ–ï–ù–ò–ï –ú–ï–¢–û–î–û–ú –•–û–°–ú–ê–ù–ê –° –ö–†–ê–¢–ù–û–°–¢–Ø–ú–ò:" << endl;
 
-        unsigned P = 20;
-        unsigned num_complex_pairs = 7;
-        unsigned num_clusters = 0;
-        vector<unsigned> cluster_counts = {};
-        vector<float_precision> cluster_radii = {};
-        vector<pair<unsigned, unsigned>> multiplicity_groups = {};
-        float_precision default_cluster_radius = 0.1;
-        bool normalize_coeffs = true;
-        uint64_t seed = 7618;
-
-        vector<float_precision> coefficients;
-        vector<float_precision> real_roots_repeated;
-        vector<float_precision> unique_real_roots;
-        vector<unsigned> real_root_multiplicities;
-        vector<complex<float_precision>> complex_roots;
-
-        generate_high_degree_polynomial(
-            P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-            multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-            coefficients, real_roots_repeated, unique_real_roots,
-            real_root_multiplicities, complex_roots
-        );
-
-        cout << "—√≈Õ≈–»–Œ¬¿ÕÕ€… œŒÀ»ÕŒÃ:" << endl;
-        cout << "—ÚÂÔÂÌ¸: " << P << endl;
-        cout << "œÓÎËÌÓÏ: ";
-        print_polynomial(coefficients);
-        cout << endl;
-
-        reverse(coefficients.begin(), coefficients.end());
-        vector<float_precision> coefficients_1 = coefficients;
-
-        cout << "»—’ŒƒÕ€≈  Œ–Õ»:" << endl;
-        cout << "¬Â˘ÂÒÚ‚ÂÌÌ˚Â ÍÓÌË: ";
-        for (auto root : real_roots_repeated) {
-            cout << root << " ";
-        }
-        cout << endl;
-
-        cout << " ÓÏÔÎÂÍÒÌ˚Â ÍÓÌË (ÒÓÔˇÊÂÌÌ˚Â Ô‡˚):" << endl;
-        if (complex_roots.empty()) {
-            cout << "  ÌÂÚ" << endl;
-        }
-        else {
-            for (size_t i = 0; i < complex_roots.size(); i += 2) {
-                cout << "  " << complex_roots[i] << " Ë " << complex_roots[i + 1] << endl;
-            }
-        }
-        cout << endl;
-
-        cout << "¬€◊»—À≈Õ»≈ Ã≈“ŒƒŒÃ ’Œ—Ã¿Õ¿ (·‡ÁÓ‚‡ˇ ‚ÂÒËˇ):" << endl;
-        float_precision epsilon = 1e-6;
-
-        // ¬˚˜ËÒÎÂÌËÂ ÍÓÌÂÈ ÏÂÚÓ‰ÓÏ ’ÓÒÏ‡Ì‡ (·‡ÁÓ‚‡ˇ ‚ÂÒËˇ)
-        vector<complex<float_precision>> hosman_roots = hosman_modification_graeffe(coefficients, epsilon);
-        cout << "Õ‡È‰ÂÌÓ ÍÓÌÂÈ: " << hosman_roots.size() << endl;
-        cout << "¬˚˜ËÒÎÂÌÌ˚Â ÍÓÌË:" << endl;
-        for (size_t i = 0; i < hosman_roots.size(); ++i) {
-            cout << "  " << i + 1 << ": " << hosman_roots[i] << endl;
-        }
-        cout << endl;
-
-        // “≈—“»–Œ¬¿Õ»≈ Ã≈“Œƒ¿ HOSMAN_WITH_MULTIPLICITIES
-        cout << "¬€◊»—À≈Õ»≈ Ã≈“ŒƒŒÃ ’Œ—Ã¿Õ¿ —  –¿“ÕŒ—“ﬂÃ»:" << endl;
-
-        auto found_graeffe = find_moduli_with_multiplicities_by_graeffe(coefficients_1, epsilon);
-        std::cout << " ÓÌË ‚Â˘ÂÒÚ‚ÂÌÌ˚Â (√ÂÙ):\n";
-        for (const auto& root : found_graeffe) {
-            std::cout << "root: " << root.value << "    mult: " << root.multiplicity << "\n";
-        }
-        std::cout << "\n";
-
-        auto found_graeffe_complex = hosman_with_multiplicities(coefficients_1, found_graeffe, epsilon);
-        std::cout << " ÓÌË ÍÓÏÔÎÂÍÒÌ˚Â (’ÓÒÏ‡Ì):\n";
-        for (auto& r : found_graeffe_complex) {
-            std::cout << r.real() << " " << r.imag() << "i\n";
-        }
+    auto found_graeffe =
+        find_moduli_with_multiplicities_by_graeffe(coefficients_1, epsilon);
+    std::cout << "–ö–æ—Ä–Ω–∏ –≤–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ (–ì—Ä–µ—Ñ):\n";
+    for (const auto &root : found_graeffe) {
+      std::cout << "root: " << root.value << "    mult: " << root.multiplicity
+                << "\n";
     }
+    std::cout << "\n";
+
+    auto found_graeffe_complex =
+        hosman_with_multiplicities(coefficients_1, found_graeffe, epsilon);
+    std::cout << "–ö–æ—Ä–Ω–∏ –∫–æ–º–ø–ª–µ–∫—Å–Ω—ã–µ (–•–æ—Å–º–∞–Ω):\n";
+    for (auto &r : found_graeffe_complex) {
+      std::cout << r.real() << " " << r.imag() << "i\n";
+    }
+  }
+
+  // –¢–ï–°–¢ 2
+  {
+    cout << "–¢–ï–°–¢ 2: –ü–æ–ª–∏–Ω–æ–º —Å 10 —Å–æ–ø—Ä—è–∂–µ–Ω–Ω—ã–º–∏ –ø–∞—Ä–∞–º–∏ (precision source)"
+         << endl;
+
+    unsigned P = 20;
+    unsigned num_complex_pairs = 10;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<float_precision> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    float_precision default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 951;
+
+    vector<float_precision> coefficients;
+    vector<float_precision> real_roots_repeated;
+    vector<float_precision> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<float_precision>> complex_roots;
+
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
+
+    cout << "–°–ì–ï–ù–ï–†–ò–†–û–í–ê–ù–ù–´–ô –ü–û–õ–ò–ù–û–ú:" << endl;
+    cout << "–°—Ç–µ–ø–µ–Ω—å: " << P << endl;
+    cout << "–ü–æ–ª–∏–Ω–æ–º: ";
+    print_polynomial(coefficients);
+    cout << endl;
+
+    reverse(coefficients.begin(), coefficients.end());
+    vector<float_precision> coefficients_1 = coefficients;
+
+    cout << "–ò–°–•–û–î–ù–´–ï –ö–û–†–ù–ò:" << endl;
+    cout << "–í–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏: ";
+    for (auto root : real_roots_repeated) {
+      cout << root << " ";
+    }
+    cout << endl;
+
+    cout << "–ö–æ–º–ø–ª–µ–∫—Å–Ω—ã–µ –∫–æ—Ä–Ω–∏ (—Å–æ–ø—Ä—è–∂–µ–Ω–Ω—ã–µ –ø–∞—Ä—ã):" << endl;
+    if (complex_roots.empty()) {
+      cout << "  –Ω–µ—Ç" << endl;
+    } else {
+      for (size_t i = 0; i < complex_roots.size(); i += 2) {
+        cout << "  " << complex_roots[i] << " –∏ " << complex_roots[i + 1]
+             << endl;
+      }
+    }
+    cout << endl;
+
+    cout << "–í–´–ß–ò–°–õ–ï–ù–ò–ï –ú–ï–¢–û–î–û–ú –•–û–°–ú–ê–ù–ê (–±–∞–∑–æ–≤–∞—è –≤–µ—Ä—Å–∏—è):" << endl;
+    float_precision epsilon =
+        numeric_constants::adaptive_epsilon<float_precision>(
+            numeric_constants::EPSILON_SCALE_COARSE * 5);
+
+    // –í—ã—á–∏—Å–ª–µ–Ω–∏–µ –∫–æ—Ä–Ω–µ–π –º–µ—Ç–æ–¥–æ–º –•–æ—Å–º–∞–Ω–∞ (–±–∞–∑–æ–≤–∞—è –≤–µ—Ä—Å–∏—è)
+    vector<complex<float_precision>> hosman_roots =
+        hosman_modification_graeffe(coefficients, epsilon, 40);
+    cout << "–ù–∞–π–¥–µ–Ω–æ –∫–æ—Ä–Ω–µ–π: " << hosman_roots.size() << endl;
+    cout << "–í—ã—á–∏—Å–ª–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏:" << endl;
+    for (size_t i = 0; i < hosman_roots.size(); ++i) {
+      cout << "  " << i + 1 << ": " << hosman_roots[i] << endl;
+    }
+    cout << endl;
+
+    // –¢–ï–°–¢–ò–†–û–í–ê–ù–ò–ï –ú–ï–¢–û–î–ê HOSMAN_WITH_MULTIPLICITIES
+    cout << "–í–´–ß–ò–°–õ–ï–ù–ò–ï –ú–ï–¢–û–î–û–ú –•–û–°–ú–ê–ù–ê –° –ö–†–ê–¢–ù–û–°–¢–Ø–ú–ò:" << endl;
+
+    auto found_graeffe =
+        find_moduli_with_multiplicities_by_graeffe(coefficients_1, epsilon, 20);
+    std::cout << "–ö–æ—Ä–Ω–∏ –≤–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ (–ì—Ä–µ—Ñ):\n";
+    for (const auto &root : found_graeffe) {
+      std::cout << "root: " << root.value << "    mult: " << root.multiplicity
+                << "\n";
+    }
+    std::cout << "\n";
+
+    auto found_graeffe_complex =
+        hosman_with_multiplicities(coefficients_1, found_graeffe, epsilon);
+    std::cout << "–ö–æ—Ä–Ω–∏ –∫–æ–º–ø–ª–µ–∫—Å–Ω—ã–µ (–•–æ—Å–º–∞–Ω):\n";
+    for (auto &r : found_graeffe_complex) {
+      std::cout << r.real() << " " << r.imag() << "i\n";
+    }
+  }
+
+  // –¢–ï–°–¢ 3
+  {
+    cout << "–¢–ï–°–¢ 3: –ü–æ–ª–∏–Ω–æ–º —Å–æ —Å–º–µ—à–∞–Ω–Ω—ã–º–∏ –∫–æ—Ä–Ω—è–º–∏" << endl;
+
+    unsigned P = 10;
+    unsigned num_complex_pairs = 3;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<double> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    double default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 5291;
+
+    vector<double> coefficients;
+    vector<double> real_roots_repeated;
+    vector<double> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<double>> complex_roots;
+
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
+
+    cout << "–°–ì–ï–ù–ï–†–ò–†–û–í–ê–ù–ù–´–ô –ü–û–õ–ò–ù–û–ú:" << endl;
+    cout << "–°—Ç–µ–ø–µ–Ω—å: " << P << endl;
+    cout << "–ü–æ–ª–∏–Ω–æ–º: ";
+    print_polynomial(coefficients);
+    cout << endl;
+
+    reverse(coefficients.begin(), coefficients.end());
+    vector<double> coefficients_1 = coefficients;
+
+    cout << "–ò–°–•–û–î–ù–´–ï –ö–û–†–ù–ò:" << endl;
+    cout << "–í–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏: ";
+    for (auto root : real_roots_repeated) {
+      cout << root << " ";
+    }
+    cout << endl;
+
+    cout << "–ö–æ–º–ø–ª–µ–∫—Å–Ω—ã–µ –∫–æ—Ä–Ω–∏ (—Å–æ–ø—Ä—è–∂–µ–Ω–Ω—ã–µ –ø–∞—Ä—ã):" << endl;
+    if (complex_roots.empty()) {
+      cout << "  –Ω–µ—Ç" << endl;
+    } else {
+      for (size_t i = 0; i < complex_roots.size(); i += 2) {
+        cout << "  " << complex_roots[i] << " –∏ " << complex_roots[i + 1]
+             << endl;
+      }
+    }
+    cout << endl;
+
+    cout << "–í–´–ß–ò–°–õ–ï–ù–ò–ï –ú–ï–¢–û–î–û–ú –•–û–°–ú–ê–ù–ê (–±–∞–∑–æ–≤–∞—è –≤–µ—Ä—Å–∏—è):" << endl;
+    double epsilon = numeric_constants::adaptive_epsilon<double>(
+        numeric_constants::EPSILON_SCALE_PRECISE);
+
+    // –í—ã—á–∏—Å–ª–µ–Ω–∏–µ –∫–æ—Ä–Ω–µ–π –º–µ—Ç–æ–¥–æ–º –•–æ—Å–º–∞–Ω–∞ (–±–∞–∑–æ–≤–∞—è –≤–µ—Ä—Å–∏—è)
+    vector<complex<double>> hosman_roots =
+        hosman_modification_graeffe(coefficients, epsilon);
+    cout << "–ù–∞–π–¥–µ–Ω–æ –∫–æ—Ä–Ω–µ–π: " << hosman_roots.size() << endl;
+    cout << "–í—ã—á–∏—Å–ª–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏:" << endl;
+    for (size_t i = 0; i < hosman_roots.size(); ++i) {
+      cout << "  " << i + 1 << ": " << hosman_roots[i] << endl;
+    }
+    cout << endl;
+
+    // –¢–ï–°–¢–ò–†–û–í–ê–ù–ò–ï –ú–ï–¢–û–î–ê HOSMAN_WITH_MULTIPLICITIES
+    cout << "–í–´–ß–ò–°–õ–ï–ù–ò–ï –ú–ï–¢–û–î–û–ú –•–û–°–ú–ê–ù–ê –° –ö–†–ê–¢–ù–û–°–¢–Ø–ú–ò:" << endl;
+
+    auto found_graeffe =
+        find_moduli_with_multiplicities_by_graeffe(coefficients_1, epsilon);
+    std::cout << "–ö–æ—Ä–Ω–∏ –≤–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ (–ì—Ä–µ—Ñ):\n";
+    for (const auto &root : found_graeffe) {
+      std::cout << "root: " << root.value << "    mult: " << root.multiplicity
+                << "\n";
+    }
+    std::cout << "\n";
+
+    auto found_graeffe_complex =
+        hosman_with_multiplicities(coefficients_1, found_graeffe, epsilon);
+    std::cout << "–ö–æ—Ä–Ω–∏ –∫–æ–º–ø–ª–µ–∫—Å–Ω—ã–µ (–•–æ—Å–º–∞–Ω):\n";
+    for (auto &r : found_graeffe_complex) {
+      std::cout << r.real() << " " << r.imag() << "i\n";
+    }
+  }
+
+  // –¢–ï–°–¢ 4
+  {
+    cout << "–¢–ï–°–¢ 4: –ü–æ–ª–∏–Ω–æ–º —Å–æ —Å–º–µ—à–∞–Ω–Ω—ã–º–∏ –∫–æ—Ä–Ω—è–º–∏ (precision source)" << endl;
+
+    unsigned P = 20;
+    unsigned num_complex_pairs = 7;
+    unsigned num_clusters = 0;
+    vector<unsigned> cluster_counts = {};
+    vector<float_precision> cluster_radii = {};
+    vector<pair<unsigned, unsigned>> multiplicity_groups = {};
+    float_precision default_cluster_radius = 0.1;
+    bool normalize_coeffs = true;
+    uint64_t seed = 7618;
+
+    vector<float_precision> coefficients;
+    vector<float_precision> real_roots_repeated;
+    vector<float_precision> unique_real_roots;
+    vector<unsigned> real_root_multiplicities;
+    vector<complex<float_precision>> complex_roots;
+
+    generate_high_degree_polynomial(
+        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
+        coefficients, real_roots_repeated, unique_real_roots,
+        real_root_multiplicities, complex_roots);
+
+    cout << "–°–ì–ï–ù–ï–†–ò–†–û–í–ê–ù–ù–´–ô –ü–û–õ–ò–ù–û–ú:" << endl;
+    cout << "–°—Ç–µ–ø–µ–Ω—å: " << P << endl;
+    cout << "–ü–æ–ª–∏–Ω–æ–º: ";
+    print_polynomial(coefficients);
+    cout << endl;
+
+    reverse(coefficients.begin(), coefficients.end());
+    vector<float_precision> coefficients_1 = coefficients;
+
+    cout << "–ò–°–•–û–î–ù–´–ï –ö–û–†–ù–ò:" << endl;
+    cout << "–í–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏: ";
+    for (auto root : real_roots_repeated) {
+      cout << root << " ";
+    }
+    cout << endl;
+
+    cout << "–ö–æ–º–ø–ª–µ–∫—Å–Ω—ã–µ –∫–æ—Ä–Ω–∏ (—Å–æ–ø—Ä—è–∂–µ–Ω–Ω—ã–µ –ø–∞—Ä—ã):" << endl;
+    if (complex_roots.empty()) {
+      cout << "  –Ω–µ—Ç" << endl;
+    } else {
+      for (size_t i = 0; i < complex_roots.size(); i += 2) {
+        cout << "  " << complex_roots[i] << " –∏ " << complex_roots[i + 1]
+             << endl;
+      }
+    }
+    cout << endl;
+
+    cout << "–í–´–ß–ò–°–õ–ï–ù–ò–ï –ú–ï–¢–û–î–û–ú –•–û–°–ú–ê–ù–ê (–±–∞–∑–æ–≤–∞—è –≤–µ—Ä—Å–∏—è):" << endl;
+    float_precision epsilon =
+        numeric_constants::adaptive_epsilon<float_precision>(
+            numeric_constants::EPSILON_SCALE_PRECISE);
+
+    // –í—ã—á–∏—Å–ª–µ–Ω–∏–µ –∫–æ—Ä–Ω–µ–π –º–µ—Ç–æ–¥–æ–º –•–æ—Å–º–∞–Ω–∞ (–±–∞–∑–æ–≤–∞—è –≤–µ—Ä—Å–∏—è)
+    vector<complex<float_precision>> hosman_roots =
+        hosman_modification_graeffe(coefficients, epsilon, 20);
+    cout << "–ù–∞–π–¥–µ–Ω–æ –∫–æ—Ä–Ω–µ–π: " << hosman_roots.size() << endl;
+    cout << "–í—ã—á–∏—Å–ª–µ–Ω–Ω—ã–µ –∫–æ—Ä–Ω–∏:" << endl;
+    for (size_t i = 0; i < hosman_roots.size(); ++i) {
+      cout << "  " << i + 1 << ": " << hosman_roots[i] << endl;
+    }
+    cout << endl;
+
+    // –¢–ï–°–¢–ò–†–û–í–ê–ù–ò–ï –ú–ï–¢–û–î–ê HOSMAN_WITH_MULTIPLICITIES
+    cout << "–í–´–ß–ò–°–õ–ï–ù–ò–ï –ú–ï–¢–û–î–û–ú –•–û–°–ú–ê–ù–ê –° –ö–†–ê–¢–ù–û–°–¢–Ø–ú–ò:" << endl;
+
+    auto found_graeffe =
+        find_moduli_with_multiplicities_by_graeffe(coefficients_1, epsilon, 20);
+    std::cout << "–ö–æ—Ä–Ω–∏ –≤–µ—â–µ—Å—Ç–≤–µ–Ω–Ω—ã–µ (–ì—Ä–µ—Ñ):\n";
+    for (const auto &root : found_graeffe) {
+      std::cout << "root: " << root.value << "    mult: " << root.multiplicity
+                << "\n";
+    }
+    std::cout << "\n";
+
+    auto found_graeffe_complex =
+        hosman_with_multiplicities(coefficients_1, found_graeffe, epsilon);
+    std::cout << "–ö–æ—Ä–Ω–∏ –∫–æ–º–ø–ª–µ–∫—Å–Ω—ã–µ (–•–æ—Å–º–∞–Ω):\n";
+    for (auto &r : found_graeffe_complex) {
+      std::cout << r.real() << " " << r.imag() << "i\n";
+    }
+  }
 }
 
 int main() {
-    // ”ÒÚ‡ÌÓ‚Í‡ ÛÒÒÍÓÈ ÎÓÍ‡ÎË ‰Îˇ ÍÓÂÍÚÌÓ„Ó ‚˚‚Ó‰‡
-    setlocale(LC_ALL, "Russian");
+  // –£—Å—Ç–∞–Ω–æ–≤–∫–∞ —Ä—É—Å—Å–∫–æ–π –ª–æ–∫–∞–ª–∏ –¥–ª—è –∫–æ—Ä—Ä–µ–∫—Ç–Ω–æ–≥–æ –≤—ã–≤–æ–¥–∞
+   setlocale(LC_ALL, "ru_RU.UTF-8");
 
-    try {
-        cout << "“≈—“»–Œ¬¿Õ»≈ ÃŒƒ»‘» ¿÷»» ’Œ—Ã¿Õ¿ Ã≈“Œƒ¿ √–≈‘≈" << endl;
-        cout << "√ÂÌÂ‡ˆËˇ ÔÓÎËÌÓÏÓ‚ Ë ‚˚˜ËÒÎÂÌËÂ ÍÓÏÔÎÂÍÒÌ˚ı ÍÓÌÂÈ" << endl << endl;
+  try {
+    cout << "–¢–ï–°–¢–ò–†–û–í–ê–ù–ò–ï –ú–û–î–ò–§–ò–ö–ê–¶–ò–ò –•–û–°–ú–ê–ù–ê –ú–ï–¢–û–î–ê –ì–†–ï–§–ï" << endl;
+    cout << "–ì–µ–Ω–µ—Ä–∞—Ü–∏—è –ø–æ–ª–∏–Ω–æ–º–æ–≤ –∏ –≤—ã—á–∏—Å–ª–µ–Ω–∏–µ –∫–æ–º–ø–ª–µ–∫—Å–Ω—ã—Ö –∫–æ—Ä–Ω–µ–π" << endl
+         << endl;
 
-        run_hosman_tests();
+    run_hosman_tests();
 
-        cout << "“≈—“»–Œ¬¿Õ»≈ «¿¬≈–ÿ≈ÕŒ" << endl;
-        return EXIT_SUCCESS;
-    }
-    catch (const exception& e) {
-        cerr << "Œÿ»¡ ¿: " << e.what() << endl;
-        return EXIT_FAILURE;
-    }
+    cout << "–¢–ï–°–¢–ò–†–û–í–ê–ù–ò–ï –ó–ê–í–ï–†–®–ï–ù–û" << endl;
+    return EXIT_SUCCESS;
+  } catch (const exception &e) {
+    cerr << "–û–®–ò–ë–ö–ê: " << e.what() << endl;
+    return EXIT_FAILURE;
+  }
 }

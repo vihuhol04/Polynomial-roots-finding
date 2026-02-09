@@ -1,527 +1,507 @@
-// Полный набор тестов для генератора многочленов
-// Реализация: Павлова Анастасия, КМБО-01-22
+#include <iomanip>
+// РџРѕР»РЅС‹Р№ РЅР°Р±РѕСЂ С‚РµСЃС‚РѕРІ РґР»СЏ РіРµРЅРµСЂР°С‚РѕСЂР° РјРЅРѕРіРѕС‡Р»РµРЅРѕРІ
+// Р РµР°Р»РёР·Р°С†РёСЏ: РџР°РІР»РѕРІР° РђРЅР°СЃС‚Р°СЃРёСЏ, РљРњР‘Рћ-01-22
 
-#include "mathUtils.h"
 #include "generate_high_degree_polynomial.h"
+#include <cassert>
+#include <cmath>
+#include <complex>
+#include <iostream>
+#include <stdexcept>
+#include <vector>
 
-using std::cout;
 using std::cerr;
-using std::endl;
+using std::cout;
 
 namespace {
-    // Вспомогательные локальные функции
-    // Вычисление значения полинома (coeffs: младший член первый) в вещественной точке x
-    template<typename T>
-    T eval_poly_local(const std::vector<T>& coeffs, T x) {
-        T res = T(0);
-        T powx = T(1);
-        for (size_t i = 0; i < coeffs.size(); ++i) {
-            res += coeffs[i] * powx;
-            powx *= x;
-        }
-        return res;
-    }
-
-    // Вычисление значения полинома в комплексной точке z
-    template<typename T>
-    std::complex<T> eval_poly_local(const std::vector<T>& coeffs, const std::complex<T>& z) {
-        std::complex<T> res = std::complex<T>(0);
-        std::complex<T> powz = std::complex<T>(1);
-        for (size_t i = 0; i < coeffs.size(); ++i) {
-            res += coeffs[i] * powz;
-            powz *= z;
-        }
-        return res;
-    }
-
-    // Сумма кратностей из вектора real_root_multiplicities
-    unsigned sum_multiplicities(const std::vector<unsigned>& mults) {
-        unsigned s = 0;
-        for (auto m : mults) s += m;
-        return s;
-    }
-
-    // Абсолютная величина для double
-    double absd(double x) { return std::abs(x); }
-
-    // Простая проверка сопряжённости
-    template<typename T>
-    bool is_conjugate_pair(const std::complex<T>& a, const std::complex<T>& b, T tol = T(1e-12)) {
-        return (std::abs(a.real() - b.real()) < tol) && (std::abs(a.imag() + b.imag()) < tol);
-    }
-
-    // Для печати заголовка теста
-    void print_test_header(const std::string& s) {
-        cout << " ТЕСТ : " << s << "\n";
-    }
-
-    // ТЕСТ 1
-    void test_basic_combined() {
-        print_test_header("Базовый комбинированный случай (кластеры + кратности + комплексные пары)");
-
-        unsigned P = 10;
-        unsigned num_complex_pairs = 2; // 4 степени
-        unsigned num_clusters = 2;
-        std::vector<unsigned> cluster_counts = { 3, 1 }; // 4 простых в кластерах
-        std::vector<double> cluster_radii = { 0.15, 0.12 };
-        std::vector<std::pair<unsigned, unsigned>> mult_groups = { {2, 1} }; // один корень кратности 2 -> 2 степени
-        double default_radius = 0.1;
-        bool normalize = true;
-        std::uint64_t seed = 20241010;
-
-        std::vector<double> coeffs;
-        std::vector<double> real_repeated;
-        std::vector<double> unique_real;
-        std::vector<unsigned> real_mults;
-        std::vector<std::complex<double>> complex_roots;
-
-        generate_high_degree_polynomial<double>(
-            P,
-            num_complex_pairs,
-            num_clusters,
-            cluster_counts,
-            cluster_radii,
-            mult_groups,
-            default_radius,
-            normalize,
-            seed,
-            coeffs,
-            real_repeated,
-            unique_real,
-            real_mults,
-            complex_roots
-        );
-
-        cout << "Степень P = " << P << ", фактическая степень из коэффициентов = " << (coeffs.size() - 1) << "\n";
-        assert(coeffs.size() == P + 1);
-
-        // Нормировка
-        if (normalize && !coeffs.empty()) {
-            double lead = coeffs.back();
-            cout << "Проверка нормировки: старший коэффициент = " << std::setprecision(12) << lead << "\n";
-            assert(std::abs(lead - 1.0) < 1e-12);
-        }
-
-        // Соответствие количества корней сумме кратностей
-        unsigned sum_mults = sum_multiplicities(real_mults);
-        cout << "Уникальных вещественных корней: " << unique_real.size() << ", сумма их кратностей = " << sum_mults
-            << ", всего повторяющихся вещественных корней (real_repeated) = " << real_repeated.size() << "\n";
-        assert(sum_mults == real_repeated.size());
-
-        // Проверка того, что все вещественные корни лежат в (-1,1)
-        for (double r : unique_real) {
-            assert(r > -1.0 - 1e-12 && r < 1.0 + 1e-12);
-        }
-
-        // Проверка комплексных корней: должны идти парами и быть сопряжёнными
-        assert(complex_roots.size() % 2 == 0);
-        for (size_t i = 0; i + 1 < complex_roots.size(); i += 2) {
-            auto a = complex_roots[i];
-            auto b = complex_roots[i + 1];
-            assert(is_conjugate_pair(a, b));
-        }
-
-        // Проверка точности: для каждого корня P(root) ~ 0 (с допустимой погрешностью)
-        const double tol_real = 1e-8;
-        const double tol_complex = 1e-6;
-        for (size_t i = 0; i < unique_real.size(); ++i) {
-            double r = unique_real[i];
-            double v = eval_poly_local(coeffs, r);
-            cout << "P(" << r << ") = " << std::setprecision(12) << v << "\n";
-            // Для кратных корней численная ошибка может быть чуть больше; допускаем небольшую погрешность
-            assert(std::abs(v) < 1e-6);
-        }
-        for (size_t i = 0; i + 1 < complex_roots.size(); i += 2) {
-            auto z = complex_roots[i];
-            auto v = eval_poly_local(coeffs, z);
-            cout << "P(" << z << ") = " << v << "\n";
-            assert(std::abs(v) < tol_complex);
-        }
-
-        cout << "ТЕСТ 1: OK\n\n";
-    }
-
-    // ТЕСТ 2
-    void test_minimal_degree() {
-        print_test_header("Минимальная степень P=1");
-
-        unsigned P = 1;
-        std::vector<double> coeffs;
-        std::vector<double> rr, ur;
-        std::vector<unsigned> mults;
-        std::vector<std::complex<double>> cz;
-
-        generate_high_degree_polynomial<double>(
-            P,             
-            0,             
-            0,             
-            {},            
-            {},            
-            {},            
-            0.1,           
-            true,          
-            1,             
-            coeffs, rr, ur, mults, cz
-        );
-
-        cout << "Коэффициенты (size) = " << coeffs.size() << " (ожидается 2)\n";
-        assert(coeffs.size() == 2);
-        cout << "ТЕСТ 2: OK\n\n";
-    }
-
-    // ТЕСТ 3
-    void test_all_complex() {
-        print_test_header("Полностью комплексный полином");
-
-        unsigned P = 6;
-        unsigned num_complex_pairs = 3; // полностью покрывает степень
-        std::vector<double> coeffs;
-        std::vector<double> rr, ur;
-        std::vector<unsigned> mults;
-        std::vector<std::complex<double>> cz;
-
-        generate_high_degree_polynomial<double>(
-            P,
-            num_complex_pairs,
-            0,
-            {}, {}, {}, 0.1, true, 2025,
-            coeffs, rr, ur, mults, cz
-        );
-
-        cout << "Уникальных вещественных корней: " << ur.size() << ", повторяющихся вещественных: " << rr.size() << "\n";
-        assert(ur.empty());
-        assert(rr.empty());
-        assert(cz.size() == 2 * num_complex_pairs);
-        for (size_t i = 0; i + 1 < cz.size(); i += 2) {
-            assert(is_conjugate_pair(cz[i], cz[i + 1]));
-        }
-        cout << "ТЕСТ 3: OK\n\n";
-    }
-
-    // ТЕСТ 4
-    void test_clusters_only() {
-        print_test_header("Только кластеры (без комплексных и кратных)");
-
-        unsigned P = 7;
-        unsigned num_clusters = 3;
-        std::vector<unsigned> cluster_counts = { 2, 2, 1 }; // суммарно 5 простых
-        std::vector<double> cluster_radii = { 0.12, 0.08, 0.05 };
-        std::vector<double> coeffs;
-        std::vector<double> rr, ur;
-        std::vector<unsigned> mults;
-        std::vector<std::complex<double>> cz;
-
-        generate_high_degree_polynomial<double>(
-            P, 0, num_clusters,
-            cluster_counts, cluster_radii, {}, 0.08, true, 31415,
-            coeffs, rr, ur, mults, cz
-        );
-
-        // Должны остаться свободные простые корни вне кластеров для заполнения до P
-        assert(coeffs.size() == P + 1);
-        // Все уникальные вещественные корни лежат в [-1,1]
-        for (double r : ur) assert(r >= -1.0 - 1e-12 && r <= 1.0 + 1e-12);
-        cout << "кол-во уникальных значений = " << ur.size() << ", общее кол-во повторных = " << rr.size() << "\n";
-        cout << "ТЕСТ 4: OK\n\n";
-    }
-
-    // ТЕСТ 5
-    void test_multiplicity_and_overflow_handling() {
-        print_test_header("Кратные корни и обработка переполнения");
-
-        unsigned P = 6;
-        // Просим: одна группа mult=3 count=2 -> 3*2 = 6 степеней,
-        // плюс ещё некоторые простые/кластеры/комплексы — генератор должен уменьшить запросы или бросить исключение.
-        std::vector<std::pair<unsigned, unsigned>> mult_groups = { {3, 2} }; // потенциально занимает всю степень
-        std::vector<double> coeffs;
-        std::vector<double> rr, ur;
-        std::vector<unsigned> mults;
-        std::vector<std::complex<double>> cz;
-
-        // Случай 1: только multiplicity_groups — должен корректно вместиться
-        generate_high_degree_polynomial<double>(
-            P, 0, 0,
-            {}, {}, mult_groups, 0.1, true, 77,
-            coeffs, rr, ur, mults, cz
-        );
-        // все корни вещественные уникальные суммарной кратности 6
-        assert(sum_multiplicities(mults) == rr.size());
-        assert(coeffs.size() == P + 1);
-        cout << "ТЕСТ 5 (case1): OK\n";
-
-        // Случай 2: просим mult_groups + дополнительные кластерные простые корни -> генератор должен сократить кластерные
-        unsigned P2 = 6;
-        std::vector<unsigned> cluster_counts = { 2, 2 }; // даёт +4 простых
-        std::vector<double> cluster_radii = { 0.2, 0.2 };
-
-        generate_high_degree_polynomial<double>(
-            P2, 0, 2,
-            cluster_counts, cluster_radii, mult_groups, 0.1, true, 88,
-            coeffs, rr, ur, mults, cz
-        );
-        // Степень всё ещё равна P2
-        assert(coeffs.size() == P2 + 1);
-        cout << "ТЕСТ 5 (case2): OK\n\n";
-    }
-
-    // ТЕСТ 6
-    void test_no_normalize() {
-        print_test_header("Поведение при normalize_coeffs == false");
-
-        unsigned P = 5;
-        std::vector<double> coeffs;
-        std::vector<double> rr, ur;
-        std::vector<unsigned> mults;
-        std::vector<std::complex<double>> cz;
-
-        generate_high_degree_polynomial<double>(
-            P, 1, 1,
-            { 2 }, { 0.1 }, {}, 0.05, false, 999,
-            coeffs, rr, ur, mults, cz
-        );
-
-        assert(coeffs.size() == P + 1);
-        double leading = coeffs.back();
-        cout << "Старший коэффициент (normalize=false) = " << leading << "\n";
-        // Не требуем конкретного значения, но он не должен быть 0
-        assert(std::abs(leading) > 1e-18);
-        cout << "ТЕСТ 6: OK\n\n";
-    }
-
-    // ТЕСТ 7
-    void test_seed_zero_random() {
-        print_test_header("Поведение при seed == 0 (рандомное зерно)");
-
-        unsigned P = 8;
-        std::vector<double> coeffs;
-        std::vector<double> rr, ur;
-        std::vector<unsigned> mults;
-        std::vector<std::complex<double>> cz;
-
-        // seed = 0 означает использовать std::random_device внутри функции
-        generate_high_degree_polynomial<double>(
-            P, 2, 2, { 2, 2 }, { 0.1, 0.1 }, {}, 0.05, true, 0,
-            coeffs, rr, ur, mults, cz
-        );
-        assert(coeffs.size() == P + 1);
-        cout << "ТЕСТ 7: OK\n\n";
-    }
-
-    // ТЕСТ 8
-    void test_invalid_arguments() {
-        print_test_header("Проверка выбрасывания исключений на неверные параметры");
-
-        // Случай: P = 0 -> должно бросать исключение
-        try {
-            unsigned P = 0;
-            std::vector<double> coeffs;
-            std::vector<double> rr, ur;
-            std::vector<unsigned> mults;
-            std::vector<std::complex<double>> cz;
-            generate_high_degree_polynomial<double>(
-                P, 0, 0, {}, {}, {}, 0.1, true, 1,
-                coeffs, rr, ur, mults, cz
-            );
-            // Если дошло сюда — это ошибка
-            assert(false && "Ожидалось исключение при P=0");
-        }
-        catch (const std::invalid_argument& e) {
-            cout << "Поймано ожидаемое исключение для P=0: " << e.what() << "\n";
-        }
-
-        // Случай: отрицательный радиус в cluster_radii_in
-        try {
-            unsigned P = 4;
-            std::vector<double> coeffs;
-            std::vector<double> rr, ur;
-            std::vector<unsigned> mults;
-            std::vector<std::complex<double>> cz;
-            generate_high_degree_polynomial<double>(
-                P, 0, 1, { 1 }, { -0.1 }, {}, 0.1, true, 2,
-                coeffs, rr, ur, mults, cz
-            );
-            assert(false && "Ожидалось исключение для отрицательного радиуса");
-        }
-        catch (const std::invalid_argument& e) {
-            cout << "Поймано ожидаемое исключение для отрицательного радиуса: " << e.what() << "\n";
-        }
-
-        // Случай: суммарный радиус >= 1 -> исключение
-        try {
-            unsigned P = 5;
-            std::vector<double> coeffs;
-            std::vector<double> rr, ur;
-            std::vector<unsigned> mults;
-            std::vector<std::complex<double>> cz;
-            generate_high_degree_polynomial<double>(
-                P, 0, 2, { 1,1 }, { 0.6, 0.5 }, {}, 0.1, true, 3,
-                coeffs, rr, ur, mults, cz
-            );
-            assert(false && "Ожидалось исключение для суммарного радиуса >= 1");
-        }
-        catch (const std::invalid_argument& e) {
-            cout << "Поймано ожидаемое исключение для суммарного радиуса: " << e.what() << "\n";
-        }
-
-        // Случай: слишком большая кратность (mult > P)
-        try {
-            unsigned P = 3;
-            std::vector<std::pair<unsigned, unsigned>> mult_groups = { {5, 1} }; // mult=5 > P
-            std::vector<double> coeffs;
-            std::vector<double> rr, ur;
-            std::vector<unsigned> mults;
-            std::vector<std::complex<double>> cz;
-            generate_high_degree_polynomial<double>(
-                P, 0, 0, {}, {}, mult_groups, 0.1, true, 4,
-                coeffs, rr, ur, mults, cz
-            );
-            assert(false && "Ожидалось исключение для mult > P");
-        }
-        catch (const std::invalid_argument& e) {
-            cout << "Поймано ожидаемое исключение для mult > P: " << e.what() << "\n";
-        }
-
-        // Случай: недостаточная степень для заданного числа пар комплексных корней
-        try {
-            unsigned P = 3;
-            unsigned num_complex_pairs = 2; // требует 4 степеней > P
-            std::vector<double> coeffs;
-            std::vector<double> rr, ur;
-            std::vector<unsigned> mults;
-            std::vector<std::complex<double>> cz;
-            generate_high_degree_polynomial<double>(
-                P, num_complex_pairs, 0, {}, {}, {}, 0.1, true, 5,
-                coeffs, rr, ur, mults, cz
-            );
-            assert(false && "Ожидалось исключение при недостаточной степени для комплексных пар");
-        }
-        catch (const std::invalid_argument& e) {
-            cout << "Поймано ожидаемое исключение для комплекса > P: " << e.what() << "\n";
-        }
-
-        cout << "ТЕСТ 8: OK\n\n";
-    }
-
-    // ТЕСТ 9
-    void test_high_degree_numerical_stability() {
-        print_test_header("Численная стабильность при высокой степени");
-
-        unsigned P = 40; // высокая степень
-        unsigned num_complex_pairs = 10; // 20 степеней
-        unsigned num_clusters = 5;
-        std::vector<unsigned> cluster_counts(num_clusters, 2); // 10 простых в кластерах
-        std::vector<double> cluster_radii(num_clusters, 0.03);
-        std::vector<std::pair<unsigned, unsigned>> mult_groups = { {2, 5} }; // 10 степеней
-        std::vector<double> coeffs;
-        std::vector<double> rr, ur;
-        std::vector<unsigned> mults;
-        std::vector<std::complex<double>> cz;
-
-        // Попробуем с нормировкой
-        generate_high_degree_polynomial<double>(
-            P, num_complex_pairs, num_clusters,
-            cluster_counts, cluster_radii, mult_groups, 0.02, true, 2025,
-            coeffs, rr, ur, mults, cz
-        );
-
-        cout << "Генерировано полином степени " << (coeffs.size() - 1) << "\n";
-        assert(coeffs.size() - 1 == static_cast<int>(P));
-
-        // Проверка P(r) для вещественных корней (позволим более свободную погрешность для высокой степени)
-        double tol = 1e-4;
-        for (double r : ur) {
-            double v = eval_poly_local(coeffs, r);
-            if (std::abs(v) > tol) {
-                cout << "Внимание: Погрешность для корня " << r << " = " << v << " (> tol=" << tol << ")\n";
-            }
-            // не assert-им строго, но выводим предупреждение; в идеале должно быть близко к нулю
-        }
-
-        cout << "ТЕСТ 9: завершён (см. возможные предупреждения)\n\n";
-    }
-
-    // ТЕСТ 10
-    void test_exhaustive_smoke() {
-        print_test_header("Всесторонняя проверка (smoke) — перебор комбинаций");
-
-        // Будем перебирать несколько комбинаций параметров, чтобы покрыть всевозможные пути
-        std::vector<unsigned> degrees = { 2, 3, 5, 8 };
-        std::vector<unsigned> complex_pairs = { 0, 1, 2 };
-        std::vector<unsigned> clusters = { 0, 1, 2, 3 };
-        std::vector<bool> norms = { true, false };
-        std::vector<std::uint64_t> seeds = { 1, 0, 123456789 };
-
-        for (auto P : degrees) {
-            for (auto cp : complex_pairs) {
-                for (auto nc : clusters) {
-                    for (auto normalize : norms) {
-                        for (auto seed : seeds) {
-                            // Подготовим cluster_counts и radii в зависимости от nc
-                            std::vector<unsigned> cluster_counts(nc, 1);
-                            std::vector<double> cluster_radii(nc, 0.05);
-                            // Простые multiplicity_groups примеры
-                            std::vector<std::pair<unsigned, unsigned>> mult_groups;
-                            if (P >= 4) mult_groups.push_back({ 2, 1 }); // один двойной корень
-
-                            std::vector<double> coeffs;
-                            std::vector<double> rr, ur;
-                            std::vector<unsigned> mults;
-                            std::vector<std::complex<double>> cz;
-
-                            try {
-                                generate_high_degree_polynomial<double>(
-                                    P, cp, nc,
-                                    cluster_counts, cluster_radii, mult_groups,
-                                    0.03, normalize, seed,
-                                    coeffs, rr, ur, mults, cz
-                                );
-                                // Базовые проверки
-                                assert(coeffs.size() == P + 1);
-                                for (double r : ur) {
-                                    assert(r >= -1.0 - 1e-12 && r <= 1.0 + 1e-12);
-                                }
-                                // Комплексные — парность
-                                assert(cz.size() % 2 == 0);
-                            } catch (const std::invalid_argument& e) {
-                                // Возможно некоторые сочетания некорректны — допустимы исключения
-                                cout << "Допустимая ошибка при комб. параметров (P=" << P << " cp=" << cp << " nc=" << nc
-                                    << " norm=" << normalize << " seed=" << seed << "): " << e.what() << "\n";
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        cout << "ТЕСТ 10: OK (см. возможные допустимые ошибки выше)\n\n";
-    }
+// Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ Р»РѕРєР°Р»СЊРЅС‹Рµ С„СѓРЅРєС†РёРё
+// Р’С‹С‡РёСЃР»РµРЅРёРµ Р·РЅР°С‡РµРЅРёСЏ РїРѕР»РёРЅРѕРјР° (coeffs: РјР»Р°РґС€РёР№ С‡Р»РµРЅ РїРµСЂРІС‹Р№) РІ РІРµС‰РµСЃС‚РІРµРЅРЅРѕР№
+// С‚РѕС‡РєРµ x
+template <typename T> T eval_poly_local(const std::vector<T> &coeffs, T x) {
+  T res = T(0);
+  T powx = T(1);
+  for (size_t i = 0; i < coeffs.size(); ++i) {
+    res += coeffs[i] * powx;
+    powx *= x;
+  }
+  return res;
 }
 
+// Р’С‹С‡РёСЃР»РµРЅРёРµ Р·РЅР°С‡РµРЅРёСЏ РїРѕР»РёРЅРѕРјР° РІ РєРѕРјРїР»РµРєСЃРЅРѕР№ С‚РѕС‡РєРµ z
+template <typename T>
+std::complex<T> eval_poly_local(const std::vector<T> &coeffs,
+                                const std::complex<T> &z) {
+  std::complex<T> res = std::complex<T>(0);
+  std::complex<T> powz = std::complex<T>(1);
+  for (size_t i = 0; i < coeffs.size(); ++i) {
+    res += coeffs[i] * powz;
+    powz *= z;
+  }
+  return res;
+}
+
+// РЎСѓРјРјР° РєСЂР°С‚РЅРѕСЃС‚РµР№ РёР· РІРµРєС‚РѕСЂР° real_root_multiplicities
+unsigned sum_multiplicities(const std::vector<unsigned> &mults) {
+  unsigned s = 0;
+  for (auto m : mults)
+    s += m;
+  return s;
+}
+
+// РџСЂРѕСЃС‚Р°СЏ РїСЂРѕРІРµСЂРєР° СЃРѕРїСЂСЏР¶С‘РЅРЅРѕСЃС‚Рё
+template <typename T>
+bool is_conjugate_pair(const std::complex<T> &a, const std::complex<T> &b,
+                       T tol = T(1e-12)) {
+  return (std::abs(a.real() - b.real()) < tol) &&
+         (std::abs(a.imag() + b.imag()) < tol);
+}
+
+// Р”Р»СЏ РїРµС‡Р°С‚Рё Р·Р°РіРѕР»РѕРІРєР° С‚РµСЃС‚Р°
+void print_test_header(const std::string &s) {
+  cout << " РўР•РЎРў : " << s << "\n";
+}
+
+// РўР•РЎРў 1
+void test_basic_combined() {
+  print_test_header("Р‘Р°Р·РѕРІС‹Р№ РєРѕРјР±РёРЅРёСЂРѕРІР°РЅРЅС‹Р№ СЃР»СѓС‡Р°Р№ (РєР»Р°СЃС‚РµСЂС‹ + РєСЂР°С‚РЅРѕСЃС‚Рё + "
+                    "РєРѕРјРїР»РµРєСЃРЅС‹Рµ РїР°СЂС‹)");
+
+  unsigned P = 10;
+  unsigned num_complex_pairs = 2; // 4 СЃС‚РµРїРµРЅРё
+  unsigned num_clusters = 2;
+  std::vector<unsigned> cluster_counts = {3, 1}; // 4 РїСЂРѕСЃС‚С‹С… РІ РєР»Р°СЃС‚РµСЂР°С…
+  std::vector<double> cluster_radii = {0.15, 0.12};
+  std::vector<std::pair<unsigned, unsigned>> mult_groups = {
+      {2, 1}}; // РѕРґРёРЅ РєРѕСЂРµРЅСЊ РєСЂР°С‚РЅРѕСЃС‚Рё 2 -> 2 СЃС‚РµРїРµРЅРё
+  double default_radius = 0.1;
+  bool normalize = true;
+  std::uint64_t seed = 20241010;
+
+  std::vector<double> coeffs;
+  std::vector<double> real_repeated;
+  std::vector<double> unique_real;
+  std::vector<unsigned> real_mults;
+  std::vector<std::complex<double>> complex_roots;
+
+  generate_high_degree_polynomial<double>(
+      P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+      mult_groups, default_radius, normalize, seed, coeffs, real_repeated,
+      unique_real, real_mults, complex_roots);
+
+  cout << "РЎС‚РµРїРµРЅСЊ P = " << P
+       << ", С„Р°РєС‚РёС‡РµСЃРєР°СЏ СЃС‚РµРїРµРЅСЊ РёР· РєРѕСЌС„С„РёС†РёРµРЅС‚РѕРІ = " << (coeffs.size() - 1)
+       << "\n";
+  assert(coeffs.size() == P + 1);
+
+  // РќРѕСЂРјРёСЂРѕРІРєР°
+  if (normalize && !coeffs.empty()) {
+    double lead = coeffs.back();
+    cout << "РџСЂРѕРІРµСЂРєР° РЅРѕСЂРјРёСЂРѕРІРєРё: СЃС‚Р°СЂС€РёР№ РєРѕСЌС„С„РёС†РёРµРЅС‚ = "
+         << std::setprecision(12) << lead << "\n";
+    assert(std::abs(lead - 1.0) < 1e-12);
+  }
+
+  // РЎРѕРѕС‚РІРµС‚СЃС‚РІРёРµ РєРѕР»РёС‡РµСЃС‚РІР° РєРѕСЂРЅРµР№ СЃСѓРјРјРµ РєСЂР°С‚РЅРѕСЃС‚РµР№
+  unsigned sum_mults = sum_multiplicities(real_mults);
+  cout << "РЈРЅРёРєР°Р»СЊРЅС‹С… РІРµС‰РµСЃС‚РІРµРЅРЅС‹С… РєРѕСЂРЅРµР№: " << unique_real.size()
+       << ", СЃСѓРјРјР° РёС… РєСЂР°С‚РЅРѕСЃС‚РµР№ = " << sum_mults
+       << ", РІСЃРµРіРѕ РїРѕРІС‚РѕСЂСЏСЋС‰РёС…СЃСЏ РІРµС‰РµСЃС‚РІРµРЅРЅС‹С… РєРѕСЂРЅРµР№ (real_repeated) = "
+       << real_repeated.size() << "\n";
+  assert(sum_mults == real_repeated.size());
+
+  // РџСЂРѕРІРµСЂРєР° С‚РѕРіРѕ, С‡С‚Рѕ РІСЃРµ РІРµС‰РµСЃС‚РІРµРЅРЅС‹Рµ РєРѕСЂРЅРё Р»РµР¶Р°С‚ РІ (-1,1)
+  for (double r : unique_real) {
+    assert(r > -1.0 - 1e-12 && r < 1.0 + 1e-12);
+  }
+
+  // РџСЂРѕРІРµСЂРєР° РєРѕРјРїР»РµРєСЃРЅС‹С… РєРѕСЂРЅРµР№: РґРѕР»Р¶РЅС‹ РёРґС‚Рё РїР°СЂР°РјРё Рё Р±С‹С‚СЊ СЃРѕРїСЂСЏР¶С‘РЅРЅС‹РјРё
+  assert(complex_roots.size() % 2 == 0);
+  for (size_t i = 0; i + 1 < complex_roots.size(); i += 2) {
+    auto a = complex_roots[i];
+    auto b = complex_roots[i + 1];
+    assert(is_conjugate_pair(a, b));
+  }
+
+  // РџСЂРѕРІРµСЂРєР° С‚РѕС‡РЅРѕСЃС‚Рё: РґР»СЏ РєР°Р¶РґРѕРіРѕ РєРѕСЂРЅСЏ P(root) ~ 0 (СЃ РґРѕРїСѓСЃС‚РёРјРѕР№
+  // РїРѕРіСЂРµС€РЅРѕСЃС‚СЊСЋ)
+
+  const double tol_complex = 1e-6;
+  for (size_t i = 0; i < unique_real.size(); ++i) {
+    double r = unique_real[i];
+    double v = eval_poly_local(coeffs, r);
+    cout << "P(" << r << ") = " << std::setprecision(12) << v << "\n";
+    // Р”Р»СЏ РєСЂР°С‚РЅС‹С… РєРѕСЂРЅРµР№ С‡РёСЃР»РµРЅРЅР°СЏ РѕС€РёР±РєР° РјРѕР¶РµС‚ Р±С‹С‚СЊ С‡СѓС‚СЊ Р±РѕР»СЊС€Рµ; РґРѕРїСѓСЃРєР°РµРј
+    // РЅРµР±РѕР»СЊС€СѓСЋ РїРѕРіСЂРµС€РЅРѕСЃС‚СЊ
+    assert(std::abs(v) < 1e-6);
+  }
+  for (size_t i = 0; i + 1 < complex_roots.size(); i += 2) {
+    auto z = complex_roots[i];
+    auto v = eval_poly_local(coeffs, z);
+    cout << "P(" << z << ") = " << v << "\n";
+    assert(std::abs(v) < tol_complex);
+  }
+
+  cout << "РўР•РЎРў 1: OK\n\n";
+}
+
+// РўР•РЎРў 2
+void test_minimal_degree() {
+  print_test_header("РњРёРЅРёРјР°Р»СЊРЅР°СЏ СЃС‚РµРїРµРЅСЊ P=1");
+
+  unsigned P = 1;
+  std::vector<double> coeffs;
+  std::vector<double> rr, ur;
+  std::vector<unsigned> mults;
+  std::vector<std::complex<double>> cz;
+
+  generate_high_degree_polynomial<double>(P, 0, 0, {}, {}, {}, 0.1, true, 1,
+                                          coeffs, rr, ur, mults, cz);
+
+  cout << "РљРѕСЌС„С„РёС†РёРµРЅС‚С‹ (size) = " << coeffs.size() << " (РѕР¶РёРґР°РµС‚СЃСЏ 2)\n";
+  assert(coeffs.size() == 2);
+  cout << "РўР•РЎРў 2: OK\n\n";
+}
+
+// РўР•РЎРў 3
+void test_all_complex() {
+  print_test_header("РџРѕР»РЅРѕСЃС‚СЊСЋ РєРѕРјРїР»РµРєСЃРЅС‹Р№ РїРѕР»РёРЅРѕРј");
+
+  unsigned P = 6;
+  unsigned num_complex_pairs = 3; // РїРѕР»РЅРѕСЃС‚СЊСЋ РїРѕРєСЂС‹РІР°РµС‚ СЃС‚РµРїРµРЅСЊ
+  std::vector<double> coeffs;
+  std::vector<double> rr, ur;
+  std::vector<unsigned> mults;
+  std::vector<std::complex<double>> cz;
+
+  generate_high_degree_polynomial<double>(P, num_complex_pairs, 0, {}, {}, {},
+                                          0.1, true, 2025, coeffs, rr, ur,
+                                          mults, cz);
+
+  cout << "РЈРЅРёРєР°Р»СЊРЅС‹С… РІРµС‰РµСЃС‚РІРµРЅРЅС‹С… РєРѕСЂРЅРµР№: " << ur.size()
+       << ", РїРѕРІС‚РѕСЂСЏСЋС‰РёС…СЃСЏ РІРµС‰РµСЃС‚РІРµРЅРЅС‹С…: " << rr.size() << "\n";
+  assert(ur.empty());
+  assert(rr.empty());
+  assert(cz.size() == 2 * num_complex_pairs);
+  for (size_t i = 0; i + 1 < cz.size(); i += 2) {
+    assert(is_conjugate_pair(cz[i], cz[i + 1]));
+  }
+  cout << "РўР•РЎРў 3: OK\n\n";
+}
+
+// РўР•РЎРў 4
+void test_clusters_only() {
+  print_test_header("РўРѕР»СЊРєРѕ РєР»Р°СЃС‚РµСЂС‹ (Р±РµР· РєРѕРјРїР»РµРєСЃРЅС‹С… Рё РєСЂР°С‚РЅС‹С…)");
+
+  unsigned P = 7;
+  unsigned num_clusters = 3;
+  std::vector<unsigned> cluster_counts = {2, 2, 1}; // СЃСѓРјРјР°СЂРЅРѕ 5 РїСЂРѕСЃС‚С‹С…
+  std::vector<double> cluster_radii = {0.12, 0.08, 0.05};
+  std::vector<double> coeffs;
+  std::vector<double> rr, ur;
+  std::vector<unsigned> mults;
+  std::vector<std::complex<double>> cz;
+
+  generate_high_degree_polynomial<double>(P, 0, num_clusters, cluster_counts,
+                                          cluster_radii, {}, 0.08, true, 31415,
+                                          coeffs, rr, ur, mults, cz);
+
+  // Р”РѕР»Р¶РЅС‹ РѕСЃС‚Р°С‚СЊСЃСЏ СЃРІРѕР±РѕРґРЅС‹Рµ РїСЂРѕСЃС‚С‹Рµ РєРѕСЂРЅРё РІРЅРµ РєР»Р°СЃС‚РµСЂРѕРІ РґР»СЏ Р·Р°РїРѕР»РЅРµРЅРёСЏ РґРѕ P
+  assert(coeffs.size() == P + 1);
+  // Р’СЃРµ СѓРЅРёРєР°Р»СЊРЅС‹Рµ РІРµС‰РµСЃС‚РІРµРЅРЅС‹Рµ РєРѕСЂРЅРё Р»РµР¶Р°С‚ РІ [-1,1]
+  for (double r : ur)
+    assert(r >= -1.0 - 1e-12 && r <= 1.0 + 1e-12);
+  cout << "РєРѕР»-РІРѕ СѓРЅРёРєР°Р»СЊРЅС‹С… Р·РЅР°С‡РµРЅРёР№ = " << ur.size()
+       << ", РѕР±С‰РµРµ РєРѕР»-РІРѕ РїРѕРІС‚РѕСЂРЅС‹С… = " << rr.size() << "\n";
+  cout << "РўР•РЎРў 4: OK\n\n";
+}
+
+// РўР•РЎРў 5
+void test_multiplicity_and_overflow_handling() {
+  print_test_header("РљСЂР°С‚РЅС‹Рµ РєРѕСЂРЅРё Рё РѕР±СЂР°Р±РѕС‚РєР° РїРµСЂРµРїРѕР»РЅРµРЅРёСЏ");
+
+  unsigned P = 6;
+  // РџСЂРѕСЃРёРј: РѕРґРЅР° РіСЂСѓРїРїР° mult=3 count=2 -> 3*2 = 6 СЃС‚РµРїРµРЅРµР№,
+  // РїР»СЋСЃ РµС‰С‘ РЅРµРєРѕС‚РѕСЂС‹Рµ РїСЂРѕСЃС‚С‹Рµ/РєР»Р°СЃС‚РµСЂС‹/РєРѕРјРїР»РµРєСЃС‹ вЂ” РіРµРЅРµСЂР°С‚РѕСЂ РґРѕР»Р¶РµРЅ СѓРјРµРЅСЊС€РёС‚СЊ
+  // Р·Р°РїСЂРѕСЃС‹ РёР»Рё Р±СЂРѕСЃРёС‚СЊ РёСЃРєР»СЋС‡РµРЅРёРµ.
+  std::vector<std::pair<unsigned, unsigned>> mult_groups = {
+      {3, 2}}; // РїРѕС‚РµРЅС†РёР°Р»СЊРЅРѕ Р·Р°РЅРёРјР°РµС‚ РІСЃСЋ СЃС‚РµРїРµРЅСЊ
+  std::vector<double> coeffs;
+  std::vector<double> rr, ur;
+  std::vector<unsigned> mults;
+  std::vector<std::complex<double>> cz;
+
+  // РЎР»СѓС‡Р°Р№ 1: С‚РѕР»СЊРєРѕ multiplicity_groups вЂ” РґРѕР»Р¶РµРЅ РєРѕСЂСЂРµРєС‚РЅРѕ РІРјРµСЃС‚РёС‚СЊСЃСЏ
+  generate_high_degree_polynomial<double>(P, 0, 0, {}, {}, mult_groups, 0.1,
+                                          true, 77, coeffs, rr, ur, mults, cz);
+  // РІСЃРµ РєРѕСЂРЅРё РІРµС‰РµСЃС‚РІРµРЅРЅС‹Рµ СѓРЅРёРєР°Р»СЊРЅС‹Рµ СЃСѓРјРјР°СЂРЅРѕР№ РєСЂР°С‚РЅРѕСЃС‚Рё 6
+  assert(sum_multiplicities(mults) == rr.size());
+  assert(coeffs.size() == P + 1);
+  cout << "РўР•РЎРў 5 (case1): OK\n";
+
+  // РЎР»СѓС‡Р°Р№ 2: РїСЂРѕСЃРёРј mult_groups + РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РєР»Р°СЃС‚РµСЂРЅС‹Рµ РїСЂРѕСЃС‚С‹Рµ РєРѕСЂРЅРё ->
+  // РіРµРЅРµСЂР°С‚РѕСЂ РґРѕР»Р¶РµРЅ СЃРѕРєСЂР°С‚РёС‚СЊ РєР»Р°СЃС‚РµСЂРЅС‹Рµ
+  unsigned P2 = 6;
+  std::vector<unsigned> cluster_counts = {2, 2}; // РґР°С‘С‚ +4 РїСЂРѕСЃС‚С‹С…
+  std::vector<double> cluster_radii = {0.2, 0.2};
+
+  generate_high_degree_polynomial<double>(P2, 0, 2, cluster_counts,
+                                          cluster_radii, mult_groups, 0.1, true,
+                                          88, coeffs, rr, ur, mults, cz);
+  // РЎС‚РµРїРµРЅСЊ РІСЃС‘ РµС‰С‘ СЂР°РІРЅР° P2
+  assert(coeffs.size() == P2 + 1);
+  cout << "РўР•РЎРў 5 (case2): OK\n\n";
+}
+
+// РўР•РЎРў 6
+void test_no_normalize() {
+  print_test_header("РџРѕРІРµРґРµРЅРёРµ РїСЂРё normalize_coeffs == false");
+
+  unsigned P = 5;
+  std::vector<double> coeffs;
+  std::vector<double> rr, ur;
+  std::vector<unsigned> mults;
+  std::vector<std::complex<double>> cz;
+
+  generate_high_degree_polynomial<double>(P, 1, 1, {2}, {0.1}, {}, 0.05, false,
+                                          999, coeffs, rr, ur, mults, cz);
+
+  assert(coeffs.size() == P + 1);
+  double leading = coeffs.back();
+  cout << "РЎС‚Р°СЂС€РёР№ РєРѕСЌС„С„РёС†РёРµРЅС‚ (normalize=false) = " << leading << "\n";
+  // РќРµ С‚СЂРµР±СѓРµРј РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ, РЅРѕ РѕРЅ РЅРµ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ 0
+  assert(std::abs(leading) > 1e-18);
+  cout << "РўР•РЎРў 6: OK\n\n";
+}
+
+// РўР•РЎРў 7
+void test_seed_zero_random() {
+  print_test_header("РџРѕРІРµРґРµРЅРёРµ РїСЂРё seed == 0 (СЂР°РЅРґРѕРјРЅРѕРµ Р·РµСЂРЅРѕ)");
+
+  unsigned P = 8;
+  std::vector<double> coeffs;
+  std::vector<double> rr, ur;
+  std::vector<unsigned> mults;
+  std::vector<std::complex<double>> cz;
+
+  // seed = 0 РѕР·РЅР°С‡Р°РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ std::random_device РІРЅСѓС‚СЂРё С„СѓРЅРєС†РёРё
+  generate_high_degree_polynomial<double>(P, 2, 2, {2, 2}, {0.1, 0.1}, {}, 0.05,
+                                          true, 0, coeffs, rr, ur, mults, cz);
+  assert(coeffs.size() == P + 1);
+  cout << "РўР•РЎРў 7: OK\n\n";
+}
+
+// РўР•РЎРў 8
+void test_invalid_arguments() {
+  print_test_header("РџСЂРѕРІРµСЂРєР° РІС‹Р±СЂР°СЃС‹РІР°РЅРёСЏ РёСЃРєР»СЋС‡РµРЅРёР№ РЅР° РЅРµРІРµСЂРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹");
+
+  // РЎР»СѓС‡Р°Р№: P = 0 -> РґРѕР»Р¶РЅРѕ Р±СЂРѕСЃР°С‚СЊ РёСЃРєР»СЋС‡РµРЅРёРµ
+  try {
+    unsigned P = 0;
+    std::vector<double> coeffs;
+    std::vector<double> rr, ur;
+    std::vector<unsigned> mults;
+    std::vector<std::complex<double>> cz;
+    generate_high_degree_polynomial<double>(P, 0, 0, {}, {}, {}, 0.1, true, 1,
+                                            coeffs, rr, ur, mults, cz);
+    // Р•СЃР»Рё РґРѕС€Р»Рѕ СЃСЋРґР° вЂ” СЌС‚Рѕ РѕС€РёР±РєР°
+    assert(false && "РћР¶РёРґР°Р»РѕСЃСЊ РёСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё P=0");
+  } catch (const std::invalid_argument &e) {
+    cout << "РџРѕР№РјР°РЅРѕ РѕР¶РёРґР°РµРјРѕРµ РёСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ P=0: " << e.what() << "\n";
+  }
+
+  // РЎР»СѓС‡Р°Р№: РѕС‚СЂРёС†Р°С‚РµР»СЊРЅС‹Р№ СЂР°РґРёСѓСЃ РІ cluster_radii_in
+  try {
+    unsigned P = 4;
+    std::vector<double> coeffs;
+    std::vector<double> rr, ur;
+    std::vector<unsigned> mults;
+    std::vector<std::complex<double>> cz;
+    generate_high_degree_polynomial<double>(P, 0, 1, {1}, {-0.1}, {}, 0.1, true,
+                                            2, coeffs, rr, ur, mults, cz);
+    assert(false && "РћР¶РёРґР°Р»РѕСЃСЊ РёСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРіРѕ СЂР°РґРёСѓСЃР°");
+  } catch (const std::invalid_argument &e) {
+    cout << "РџРѕР№РјР°РЅРѕ РѕР¶РёРґР°РµРјРѕРµ РёСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРіРѕ СЂР°РґРёСѓСЃР°: "
+         << e.what() << "\n";
+  }
+
+  // РЎР»СѓС‡Р°Р№: СЃСѓРјРјР°СЂРЅС‹Р№ СЂР°РґРёСѓСЃ >= 1 -> РёСЃРєР»СЋС‡РµРЅРёРµ
+  try {
+    unsigned P = 5;
+    std::vector<double> coeffs;
+    std::vector<double> rr, ur;
+    std::vector<unsigned> mults;
+    std::vector<std::complex<double>> cz;
+    generate_high_degree_polynomial<double>(P, 0, 2, {1, 1}, {0.6, 0.5}, {},
+                                            0.1, true, 3, coeffs, rr, ur, mults,
+                                            cz);
+    assert(false && "РћР¶РёРґР°Р»РѕСЃСЊ РёСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ СЃСѓРјРјР°СЂРЅРѕРіРѕ СЂР°РґРёСѓСЃР° >= 1");
+  } catch (const std::invalid_argument &e) {
+    cout << "РџРѕР№РјР°РЅРѕ РѕР¶РёРґР°РµРјРѕРµ РёСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ СЃСѓРјРјР°СЂРЅРѕРіРѕ СЂР°РґРёСѓСЃР°: " << e.what()
+         << "\n";
+  }
+
+  // РЎР»СѓС‡Р°Р№: СЃР»РёС€РєРѕРј Р±РѕР»СЊС€Р°СЏ РєСЂР°С‚РЅРѕСЃС‚СЊ (mult > P)
+  try {
+    unsigned P = 3;
+    std::vector<std::pair<unsigned, unsigned>> mult_groups = {
+        {5, 1}}; // mult=5 > P
+    std::vector<double> coeffs;
+    std::vector<double> rr, ur;
+    std::vector<unsigned> mults;
+    std::vector<std::complex<double>> cz;
+    generate_high_degree_polynomial<double>(P, 0, 0, {}, {}, mult_groups, 0.1,
+                                            true, 4, coeffs, rr, ur, mults, cz);
+    assert(false && "РћР¶РёРґР°Р»РѕСЃСЊ РёСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ mult > P");
+  } catch (const std::invalid_argument &e) {
+    cout << "РџРѕР№РјР°РЅРѕ РѕР¶РёРґР°РµРјРѕРµ РёСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ mult > P: " << e.what() << "\n";
+  }
+
+  // РЎР»СѓС‡Р°Р№: РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅР°СЏ СЃС‚РµРїРµРЅСЊ РґР»СЏ Р·Р°РґР°РЅРЅРѕРіРѕ С‡РёСЃР»Р° РїР°СЂ РєРѕРјРїР»РµРєСЃРЅС‹С… РєРѕСЂРЅРµР№
+  try {
+    unsigned P = 3;
+    unsigned num_complex_pairs = 2; // С‚СЂРµР±СѓРµС‚ 4 СЃС‚РµРїРµРЅРµР№ > P
+    std::vector<double> coeffs;
+    std::vector<double> rr, ur;
+    std::vector<unsigned> mults;
+    std::vector<std::complex<double>> cz;
+    generate_high_degree_polynomial<double>(P, num_complex_pairs, 0, {}, {}, {},
+                                            0.1, true, 5, coeffs, rr, ur, mults,
+                                            cz);
+    assert(
+        false &&
+        "РћР¶РёРґР°Р»РѕСЃСЊ РёСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕР№ СЃС‚РµРїРµРЅРё РґР»СЏ РєРѕРјРїР»РµРєСЃРЅС‹С… РїР°СЂ");
+  } catch (const std::invalid_argument &e) {
+    cout << "РџРѕР№РјР°РЅРѕ РѕР¶РёРґР°РµРјРѕРµ РёСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ РєРѕРјРїР»РµРєСЃР° > P: " << e.what()
+         << "\n";
+  }
+
+  cout << "РўР•РЎРў 8: OK\n\n";
+}
+
+// РўР•РЎРў 9
+void test_high_degree_numerical_stability() {
+  print_test_header("Р§РёСЃР»РµРЅРЅР°СЏ СЃС‚Р°Р±РёР»СЊРЅРѕСЃС‚СЊ РїСЂРё РІС‹СЃРѕРєРѕР№ СЃС‚РµРїРµРЅРё");
+
+  unsigned P = 40;                 // РІС‹СЃРѕРєР°СЏ СЃС‚РµРїРµРЅСЊ
+  unsigned num_complex_pairs = 10; // 20 СЃС‚РµРїРµРЅРµР№
+  unsigned num_clusters = 5;
+  std::vector<unsigned> cluster_counts(num_clusters,
+                                       2); // 10 РїСЂРѕСЃС‚С‹С… РІ РєР»Р°СЃС‚РµСЂР°С…
+  std::vector<double> cluster_radii(num_clusters, 0.03);
+  std::vector<std::pair<unsigned, unsigned>> mult_groups = {
+      {2, 5}}; // 10 СЃС‚РµРїРµРЅРµР№
+  std::vector<double> coeffs;
+  std::vector<double> rr, ur;
+  std::vector<unsigned> mults;
+  std::vector<std::complex<double>> cz;
+
+  // РџРѕРїСЂРѕР±СѓРµРј СЃ РЅРѕСЂРјРёСЂРѕРІРєРѕР№
+  generate_high_degree_polynomial<double>(
+      P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
+      mult_groups, 0.02, true, 2025, coeffs, rr, ur, mults, cz);
+
+  cout << "Р“РµРЅРµСЂРёСЂРѕРІР°РЅРѕ РїРѕР»РёРЅРѕРј СЃС‚РµРїРµРЅРё " << (coeffs.size() - 1) << "\n";
+  assert(coeffs.size() - 1 == static_cast<int>(P));
+
+  // РџСЂРѕРІРµСЂРєР° P(r) РґР»СЏ РІРµС‰РµСЃС‚РІРµРЅРЅС‹С… РєРѕСЂРЅРµР№ (РїРѕР·РІРѕР»РёРј Р±РѕР»РµРµ СЃРІРѕР±РѕРґРЅСѓСЋ РїРѕРіСЂРµС€РЅРѕСЃС‚СЊ
+  // РґР»СЏ РІС‹СЃРѕРєРѕР№ СЃС‚РµРїРµРЅРё)
+  double tol = 1e-4;
+  for (double r : ur) {
+    double v = eval_poly_local(coeffs, r);
+    if (std::abs(v) > tol) {
+      cout << "Р’РЅРёРјР°РЅРёРµ: РџРѕРіСЂРµС€РЅРѕСЃС‚СЊ РґР»СЏ РєРѕСЂРЅСЏ " << r << " = " << v
+           << " (> tol=" << tol << ")\n";
+    }
+    // РЅРµ assert-РёРј СЃС‚СЂРѕРіРѕ, РЅРѕ РІС‹РІРѕРґРёРј РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёРµ; РІ РёРґРµР°Р»Рµ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ
+    // Р±Р»РёР·РєРѕ Рє РЅСѓР»СЋ
+  }
+
+  cout << "РўР•РЎРў 9: Р·Р°РІРµСЂС€С‘РЅ (СЃРј. РІРѕР·РјРѕР¶РЅС‹Рµ РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёСЏ)\n\n";
+}
+
+// РўР•РЎРў 10
+void test_exhaustive_smoke() {
+  print_test_header("Р’СЃРµСЃС‚РѕСЂРѕРЅРЅСЏСЏ РїСЂРѕРІРµСЂРєР° (smoke) вЂ” РїРµСЂРµР±РѕСЂ РєРѕРјР±РёРЅР°С†РёР№");
+
+  // Р‘СѓРґРµРј РїРµСЂРµР±РёСЂР°С‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ РєРѕРјР±РёРЅР°С†РёР№ РїР°СЂР°РјРµС‚СЂРѕРІ, С‡С‚РѕР±С‹ РїРѕРєСЂС‹С‚СЊ
+  // РІСЃРµРІРѕР·РјРѕР¶РЅС‹Рµ РїСѓС‚Рё
+  std::vector<unsigned> degrees = {2, 3, 5, 8};
+  std::vector<unsigned> complex_pairs = {0, 1, 2};
+  std::vector<unsigned> clusters = {0, 1, 2, 3};
+  std::vector<bool> norms = {true, false};
+  std::vector<std::uint64_t> seeds = {1, 0, 123456789};
+
+  for (auto P : degrees) {
+    for (auto cp : complex_pairs) {
+      for (auto nc : clusters) {
+        for (auto normalize : norms) {
+          for (auto seed : seeds) {
+            // РџРѕРґРіРѕС‚РѕРІРёРј cluster_counts Рё radii РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ nc
+            std::vector<unsigned> cluster_counts(nc, 1);
+            std::vector<double> cluster_radii(nc, 0.05);
+            // РџСЂРѕСЃС‚С‹Рµ multiplicity_groups РїСЂРёРјРµСЂС‹
+            std::vector<std::pair<unsigned, unsigned>> mult_groups;
+            if (P >= 4)
+              mult_groups.push_back({2, 1}); // РѕРґРёРЅ РґРІРѕР№РЅРѕР№ РєРѕСЂРµРЅСЊ
+
+            std::vector<double> coeffs;
+            std::vector<double> rr, ur;
+            std::vector<unsigned> mults;
+            std::vector<std::complex<double>> cz;
+
+            try {
+              generate_high_degree_polynomial<double>(
+                  P, cp, nc, cluster_counts, cluster_radii, mult_groups, 0.03,
+                  normalize, seed, coeffs, rr, ur, mults, cz);
+              // Р‘Р°Р·РѕРІС‹Рµ РїСЂРѕРІРµСЂРєРё
+              assert(coeffs.size() == P + 1);
+              for (double r : ur) {
+                assert(r >= -1.0 - 1e-12 && r <= 1.0 + 1e-12);
+              }
+              // РљРѕРјРїР»РµРєСЃРЅС‹Рµ вЂ” РїР°СЂРЅРѕСЃС‚СЊ
+              assert(cz.size() % 2 == 0);
+            } catch (const std::invalid_argument &e) {
+              // Р’РѕР·РјРѕР¶РЅРѕ РЅРµРєРѕС‚РѕСЂС‹Рµ СЃРѕС‡РµС‚Р°РЅРёСЏ РЅРµРєРѕСЂСЂРµРєС‚РЅС‹ вЂ” РґРѕРїСѓСЃС‚РёРјС‹ РёСЃРєР»СЋС‡РµРЅРёСЏ
+              cout << "Р”РѕРїСѓСЃС‚РёРјР°СЏ РѕС€РёР±РєР° РїСЂРё РєРѕРјР±. РїР°СЂР°РјРµС‚СЂРѕРІ (P=" << P
+                   << " cp=" << cp << " nc=" << nc << " norm=" << normalize
+                   << " seed=" << seed << "): " << e.what() << "\n";
+            }
+          }
+        }
+      }
+    }
+  }
+  cout << "РўР•РЎРў 10: OK (СЃРј. РІРѕР·РјРѕР¶РЅС‹Рµ РґРѕРїСѓСЃС‚РёРјС‹Рµ РѕС€РёР±РєРё РІС‹С€Рµ)\n\n";
+}
+} // namespace
+
 int main() {
-    setlocale(LC_ALL, "Russian");
-    cout << "Запуск полного набора тестов для generate_high_degree_polynomial.h\n\n";
+  setlocale(LC_ALL, "ru_RU.UTF-8");
+  cout << "Р—Р°РїСѓСЃРє РїРѕР»РЅРѕРіРѕ РЅР°Р±РѕСЂР° С‚РµСЃС‚РѕРІ РґР»СЏ "
+          "generate_high_degree_polynomial.h\n\n";
 
-    try {
-        test_basic_combined();
-        test_minimal_degree();
-        test_all_complex();
-        test_clusters_only();
-        test_multiplicity_and_overflow_handling();
-        test_no_normalize();
-        test_seed_zero_random();
-        test_invalid_arguments();
-        test_high_degree_numerical_stability();
-        test_exhaustive_smoke();
+  try {
+    test_basic_combined();
+    test_minimal_degree();
+    test_all_complex();
+    test_clusters_only();
+    test_multiplicity_and_overflow_handling();
+    test_no_normalize();
+    test_seed_zero_random();
+    test_invalid_arguments();
+    test_high_degree_numerical_stability();
+    test_exhaustive_smoke();
 
-        cout << "Все тесты выполнены.\n";
-    }
-    catch (const std::exception& ex) {
-        cerr << "Во время тестов произошло непредвиденное исключение: " << ex.what() << "\n";
-        return 2;
-    }
-    catch (...) {
-        cerr << "Во время тестов произошло непредвиденное неизвестное исключение.\n";
-        return 3;
-    }
+    cout << "Р’СЃРµ С‚РµСЃС‚С‹ РІС‹РїРѕР»РЅРµРЅС‹.\n";
+  } catch (const std::exception &ex) {
+    cerr << "Р’Рѕ РІСЂРµРјСЏ С‚РµСЃС‚РѕРІ РїСЂРѕРёР·РѕС€Р»Рѕ РЅРµРїСЂРµРґРІРёРґРµРЅРЅРѕРµ РёСЃРєР»СЋС‡РµРЅРёРµ: " << ex.what()
+         << "\n";
+    return 2;
+  } catch (...) {
+    cerr
+        << "Р’Рѕ РІСЂРµРјСЏ С‚РµСЃС‚РѕРІ РїСЂРѕРёР·РѕС€Р»Рѕ РЅРµРїСЂРµРґРІРёРґРµРЅРЅРѕРµ РЅРµРёР·РІРµСЃС‚РЅРѕРµ РёСЃРєР»СЋС‡РµРЅРёРµ.\n";
+    return 3;
+  }
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
