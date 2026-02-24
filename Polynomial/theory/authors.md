@@ -1,4 +1,4 @@
-# Авторы и участники проекта
+# Авторы и участники теории
 
 ## Wilf.pdf
 - **Основной автор**: Семенидо Алина, КМБО-06-22, [lina.semenido@yandex.ru](mailto:lina.semenido@yandex.ru)
