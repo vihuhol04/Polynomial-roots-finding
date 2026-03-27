@@ -15,524 +15,229 @@ using namespace std;
 
 // Основная функция тестирования - генерирует полиномы и тестирует метод Грефе
 void run_graeffe_tests() {
-  cout << endl << endl;
+    cout << "\n=========================================\n";
+    cout << "РАСШИРЕННОЕ ТЕСТИРОВАНИЕ МЕТОДА ГРЕФЕ\n";
+    cout << "=========================================\n";
 
-  // ТЕСТ 0: Проверка случая одинаковых модулей (x^4 - 16 = 0, корни +/-2,
-  // +/-2i, |r|=2)
-  {
-    cout << "ТЕСТ 0: Полином x^4 - 16 (все корни |r|=2)" << endl;
-    vector<double> coeffs = {1.0, 0.0, 0.0, 0.0,
-                             -16.0}; // от старших к младшим (x^4 ... x^0)
-    double epsilon = 1e-10;
+    int test_id = 0;
 
-    vector<double> computed_moduli =
-        find_moduli_roots_by_graeffe(coeffs, epsilon);
+    // степени
+    vector<unsigned> degrees = { 5, 10, 15, 20, 30, 40, 50, 75, 100 };
 
-    cout << "Вычисленные модули: ";
-    for (double m : computed_moduli)
-      cout << m << " ";
-    cout << endl;
+    // типы сценариев
+    enum ScenarioType {
+        SIMPLE,
+        MULTIPLE,
+        CLUSTERED,
+        MIXED
+    };
 
-    bool passed = true;
-    if (computed_moduli.size() != 4)
-      passed = false;
-    else {
-      for (double m : computed_moduli) {
-        if (std::abs(m - 2.0) > 1e-3)
-          passed = false;
-      }
-    }
-    cout << "Результат теста 0: " << (passed ? "PASSED" : "FAILED") << endl
-         << endl;
-  }
+    vector<ScenarioType> scenarios = {
+        SIMPLE, MULTIPLE, CLUSTERED, MIXED };
 
-  // ТЕСТ 1
-  {
-    cout << "ТЕСТ 1: Полином со степенью 5" << endl;
+    // =========================
+    // ТЕСТЫ ДЛЯ double
+    // =========================
+    cout << "\n===== ТЕСТЫ (double) =====\n";
 
-    unsigned P = 5;                       // степень полинома
-    unsigned num_complex_pairs = 0;       // кол-во комплексных пар
-    unsigned num_clusters = 0;            // кол-во кластеров
-    vector<unsigned> cluster_counts = {}; // сколько корней в каждом кластере
-    vector<double> cluster_radii = {};    // радиусы кластеров
-    vector<pair<unsigned, unsigned>> multiplicity_groups =
-        {};                              // сколько корней каждой кратности
-    double default_cluster_radius = 0.1; // радиус кластера по умолчани ю
-    bool normalize_coeffs = true;        // приводить старший коэффициент к 1?
-    uint64_t seed = 12345;               // тип рандома
+    for (auto P : degrees) {
+        for (auto scenario : scenarios) {
+            cout << "\n-----------------------------------------\n";
+            cout << "ТЕСТ #" << test_id++
+                << " | degree=" << P << " | type=double\n";
 
-    vector<double> coefficients;        // вектор коэффициентов на выходе
-    vector<double> real_roots_repeated; // вектор всех вещественных корней
-    vector<double> unique_real_roots;   // вектор уникальных вещественных корней
-    vector<unsigned>
-        real_root_multiplicities;          // вектор кратных вещественных корней
-    vector<complex<double>> complex_roots; // вектор комплексных корней
+            unsigned num_complex_pairs = 0;
+            unsigned num_clusters = 0;
+            vector<unsigned> cluster_counts;
+            vector<double> cluster_radii;
+            vector<pair<unsigned, unsigned>> multiplicity_groups;
 
-    generate_high_degree_polynomial(
-        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-        coefficients, real_roots_repeated, unique_real_roots,
-        real_root_multiplicities, complex_roots);
+            switch (scenario) {
+            case SIMPLE:
+                cout << "Сценарий: простые корни\n";
+                break;
 
-    cout << "СГЕНЕРИРОВАННЫЙ ПОЛИНОМ:" << endl;
-    cout << "Степень: " << P << endl;
+            case MULTIPLE:
+                cout << "Сценарий: кратные корни\n";
+                multiplicity_groups = { {2, P / 4}, {3, P / 6} };
+                break;
 
-    cout << endl << "Полином: ";
-    print_polynomial(coefficients);
-    cout << endl;
+            case CLUSTERED:
+                cout << "Сценарий: кластеризованные корни\n";
+                num_clusters = 2;
+                cluster_counts = { P / 4, P / 5 };
+                cluster_radii = { 1e-3, 1e-2 };
+                break;
 
-    cout << "ИСХОДНЫЕ КОРНИ:" << endl;
-    cout << "Вещественные корни (с кратностями): ";
-    for (auto root : real_roots_repeated) {
-      cout << root << " ";
-    }
-    cout << endl;
+            case MIXED:
+                cout << "Сценарий: смешанный\n";
+                num_clusters = 2;
+                cluster_counts = { P / 5, P / 6 };
+                cluster_radii = { 1e-3, 5e-3 };
+                multiplicity_groups = { {2, P / 6} };
+                break;
+            }
 
-    cout << "Уникальные вещественные корни и их кратности:" << endl;
-    for (size_t i = 0; i < unique_real_roots.size(); ++i) {
-      cout << "  " << unique_real_roots[i] << " : кратность "
-           << real_root_multiplicities[i] << endl;
-    }
+            double default_cluster_radius = 0.1;
+            bool normalize_coeffs = true;
+            uint64_t seed = 12345 + P * 10 + scenario;
 
-    cout << "Комплексные корни (сопряженные пары):" << endl;
-    if (complex_roots.empty()) {
-      cout << "  нет" << endl;
-    } else {
-      for (size_t i = 0; i < complex_roots.size(); i += 2) {
-        cout << "  " << complex_roots[i] << " и " << complex_roots[i + 1]
-             << endl;
-      }
-    }
+            vector<double> coefficients;
+            vector<double> real_roots_repeated;
+            vector<double> unique_real_roots;
+            vector<unsigned> real_root_multiplicities;
+            vector<complex<double>> complex_roots;
 
-    cout << endl << "ВЫЧИСЛЕНИЕ МЕТОДОМ ГРЕФЕ" << endl;
-    double epsilon = numeric_constants::adaptive_epsilon<double>(
-        numeric_constants::EPSILON_SCALE_COARSE * 5);
+            generate_high_degree_polynomial(
+                P, num_complex_pairs, num_clusters,
+                cluster_counts, cluster_radii,
+                multiplicity_groups, default_cluster_radius,
+                normalize_coeffs, seed,
+                coefficients, real_roots_repeated,
+                unique_real_roots, real_root_multiplicities,
+                complex_roots);
 
-    // меняем порядок коэффициентов
-    vector<double> coefficients_for_graeffe = coefficients;
-    reverse(coefficients_for_graeffe.begin(), coefficients_for_graeffe.end());
+            double epsilon =
+                numeric_constants::adaptive_epsilon<double>(
+                    numeric_constants::EPSILON_SCALE_STANDARD);
 
-    // ищем корни методом Грефе
-    vector<double> computed_moduli =
-        find_moduli_roots_by_graeffe(coefficients_for_graeffe, epsilon);
-    cout << "Вычисленные модули корней: ";
-    if (computed_moduli.empty()) {
-      cout << "метод не нашел корней";
-    } else {
-      for (auto modulus : computed_moduli)
-        cout << modulus << " ";
-    }
-    cout << endl;
+            int maxIter = (P > 50) ? 10 : 20;
 
-    // ищем корни методом Грефе с учетом их кратности
-    auto moduli_with_mult = find_moduli_with_multiplicities_by_graeffe(
-        coefficients_for_graeffe, epsilon);
-    cout << "Модули с кратностями:" << endl;
-    if (moduli_with_mult.empty()) {
-      cout << "  не найдены" << endl;
-    } else {
-      for (const auto &m : moduli_with_mult)
-        cout << "  |r| = " << m.value << ", кратность = " << m.multiplicity
-             << endl;
-    }
-    cout << endl << endl;
-  }
+            vector<double> coeffs = coefficients;
+            reverse(coeffs.begin(), coeffs.end());
 
-  // ТЕСТ 2
-  {
-    cout << "ТЕСТ 2: Полином со степенью 20" << endl;
+            auto moduli = find_moduli_roots_by_graeffe(
+                coeffs, epsilon, maxIter);
 
-    unsigned P = 20;                      // степень полинома
-    unsigned num_complex_pairs = 0;       // кол-во комплексных пар
-    unsigned num_clusters = 0;            // кол-во кластеров
-    vector<unsigned> cluster_counts = {}; // сколько корней в каждом кластере
-    vector<double> cluster_radii = {};    // радиусы кластеров
-    vector<pair<unsigned, unsigned>> multiplicity_groups =
-        {};                              // сколько корней каждой кратности
-    double default_cluster_radius = 0.1; // радиус кластера по умолчанию
-    bool normalize_coeffs = true;        // приводить старший коэффициент к 1?
-    uint64_t seed = 12345;               // тип рандома
+            auto moduli_mult =
+                find_moduli_with_multiplicities_by_graeffe(
+                    coeffs, epsilon, maxIter);
 
-    vector<double> coefficients;        // вектор коэффициентов на выходе
-    vector<double> real_roots_repeated; // вектор всех вещественных корней
-    vector<double> unique_real_roots;   // вектор уникальных вещественных корней
-    vector<unsigned>
-        real_root_multiplicities;          // вектор кратных вещественных корней
-    vector<complex<double>> complex_roots; // вектор комплексных корней
+            cout << "Найдено модулей: " << moduli.size() << endl;
 
-    generate_high_degree_polynomial(
-        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-        coefficients, real_roots_repeated, unique_real_roots,
-        real_root_multiplicities, complex_roots);
+            if (!moduli.empty()) {
+                cout << "Первые 5: ";
+                for (size_t i = 0; i < moduli.size() && i < 5; ++i)
+                    cout << moduli[i] << " ";
+                cout << endl;
+            }
 
-    cout << "СГЕНЕРИРОВАННЫЙ ПОЛИНОМ:" << endl;
-    cout << "Степень: " << P << endl;
-    cout << "Размер вектора коэффициентов" << coefficients.size() << endl;
+            if (!moduli_mult.empty()) {
+                cout << "С кратностями (до 3):\n";
+                for (size_t i = 0; i < moduli_mult.size() && i < 3; ++i)
+                    cout << "  |r|=" << moduli_mult[i].value
+                    << " mult=" << moduli_mult[i].multiplicity << endl;
+            }
 
-    cout << endl << "Полином: ";
-    print_polynomial(coefficients);
-    cout << endl;
-
-    cout << "ИСХОДНЫЕ КОРНИ:" << endl;
-    cout << "Вещественные корни (с кратностями): ";
-    for (auto root : real_roots_repeated) {
-      cout << root << " ";
-    }
-    cout << endl;
-
-    cout << "Уникальные вещественные корни и их кратности:" << endl;
-    for (size_t i = 0; i < unique_real_roots.size(); ++i) {
-      cout << "  " << unique_real_roots[i] << " : кратность "
-           << real_root_multiplicities[i] << endl;
+            cout << "РЕЗУЛЬТАТ: "
+                << (!moduli.empty() ? "PASSED" : "FAILED")
+                << endl;
+        }
     }
 
-    cout << "Комплексные корни (сопряженные пары):" << endl;
-    if (complex_roots.empty()) {
-      cout << "  нет" << endl;
-    } else {
-      for (size_t i = 0; i < complex_roots.size(); i += 2) {
-        cout << "  " << complex_roots[i] << " и " << complex_roots[i + 1]
-             << endl;
-      }
+    // =========================
+    // ТЕСТЫ ДЛЯ float_precision
+    // =========================
+    cout << "\n===== ТЕСТЫ (float_precision) =====\n";
+
+    for (auto P : degrees) {
+        for (auto scenario : scenarios) {
+            cout << "\n-----------------------------------------\n";
+            cout << "ТЕСТ #" << test_id++
+                << " | degree=" << P << " | type=high_precision\n";
+
+            unsigned num_complex_pairs = 0;
+            unsigned num_clusters = 0;
+            vector<unsigned> cluster_counts;
+            vector<float_precision> cluster_radii;
+            vector<pair<unsigned, unsigned>> multiplicity_groups;
+
+            switch (scenario) {
+            case SIMPLE:
+                cout << "Сценарий: простые корни\n";
+                break;
+
+            case MULTIPLE:
+                cout << "Сценарий: кратные корни\n";
+                multiplicity_groups = { {2, P / 4}, {3, P / 6} };
+                break;
+
+            case CLUSTERED:
+                cout << "Сценарий: кластеризованные корни\n";
+                num_clusters = 2;
+                cluster_counts = { P / 4, P / 5 };
+                cluster_radii = { 1e-4, 1e-3 };
+                break;
+
+            case MIXED:
+                cout << "Сценарий: смешанный\n";
+                num_clusters = 2;
+                cluster_counts = { P / 5, P / 6 };
+                cluster_radii = { 1e-4, 5e-4 };
+                multiplicity_groups = { {2, P / 6} };
+                break;
+            }
+
+            float_precision default_cluster_radius = 0.1;
+            bool normalize_coeffs = true;
+            uint64_t seed = 9999 + P * 7 + scenario;
+
+            vector<float_precision> coefficients;
+            vector<float_precision> real_roots_repeated;
+            vector<float_precision> unique_real_roots;
+            vector<unsigned> real_root_multiplicities;
+            vector<complex<float_precision>> complex_roots;
+
+            generate_high_degree_polynomial(
+                P, num_complex_pairs, num_clusters,
+                cluster_counts, cluster_radii,
+                multiplicity_groups, default_cluster_radius,
+                normalize_coeffs, seed,
+                coefficients, real_roots_repeated,
+                unique_real_roots, real_root_multiplicities,
+                complex_roots);
+
+            float_precision epsilon =
+                numeric_constants::adaptive_epsilon<float_precision>(
+                    numeric_constants::EPSILON_SCALE_PRECISE);
+
+            int maxIter = (P > 50) ? 8 : 15;
+
+            vector<float_precision> coeffs = coefficients;
+            reverse(coeffs.begin(), coeffs.end());
+
+            auto moduli = find_moduli_roots_by_graeffe(
+                coeffs, epsilon, maxIter);
+
+            auto moduli_mult =
+                find_moduli_with_multiplicities_by_graeffe(
+                    coeffs, epsilon, maxIter);
+
+            cout << "Найдено модулей: " << moduli.size() << endl;
+
+            if (!moduli.empty()) {
+                cout << "Первые 5: ";
+                for (size_t i = 0; i < moduli.size() && i < 5; ++i)
+                    cout << moduli[i] << " ";
+                cout << endl;
+            }
+
+            if (!moduli_mult.empty()) {
+                cout << "С кратностями (до 3):\n";
+                for (size_t i = 0; i < moduli_mult.size() && i < 3; ++i)
+                    cout << "  |r|=" << moduli_mult[i].value
+                    << " mult=" << moduli_mult[i].multiplicity << endl;
+            }
+
+            cout << "РЕЗУЛЬТАТ: "
+                << (!moduli.empty() ? "PASSED" : "FAILED")
+                << endl;
+        }
     }
 
-    cout << endl << "ВЫЧИСЛЕНИЕ МЕТОДОМ ГРЕФЕ" << endl;
-    double epsilon = numeric_constants::adaptive_epsilon<double>(
-        numeric_constants::EPSILON_SCALE_COARSE * 5);
-
-    // меняем порядок коэффициентов
-    vector<double> coefficients_for_graeffe = coefficients;
-    reverse(coefficients_for_graeffe.begin(), coefficients_for_graeffe.end());
-
-    // ищем корни методом Грефе
-    vector<double> computed_moduli =
-        find_moduli_roots_by_graeffe(coefficients_for_graeffe, epsilon);
-    cout << "Вычисленные модули корней: ";
-    if (computed_moduli.empty()) {
-      cout << "метод не нашел корней";
-    } else {
-      for (auto modulus : computed_moduli)
-        cout << modulus << " ";
-    }
-    cout << endl;
-
-    // ищем корни методом Грефе с учетом их кратности
-    auto moduli_with_mult = find_moduli_with_multiplicities_by_graeffe(
-        coefficients_for_graeffe, epsilon);
-    cout << "Модули с кратностями:" << endl;
-    if (moduli_with_mult.empty()) {
-      cout << "  не найдены" << endl;
-    } else {
-      for (const auto &m : moduli_with_mult)
-        cout << "  |r| = " << m.value << ", кратность = " << m.multiplicity
-             << endl;
-    }
-    cout << endl << endl;
-  }
-
-  // ТЕСТ 3
-  {
-    cout << "ТЕСТ 3: Полином с кратными корнями и степень 5 (precision source)"
-         << endl;
-
-    unsigned P = 5;                       // степень полинома
-    unsigned num_complex_pairs = 0;       // кол-во комплексных пар
-    unsigned num_clusters = 0;            // кол-во кластеров
-    vector<unsigned> cluster_counts = {}; // сколько корней в каждом кластере
-    vector<float_precision> cluster_radii = {}; // радиусы кластеров
-    vector<pair<unsigned, unsigned>> multiplicity_groups = {
-        {2, 3}, {1, 3}}; // сколько корней каждой кратности
-    float_precision default_cluster_radius =
-        0.1;                      // радиус кластера по умолчанию
-    bool normalize_coeffs = true; // приводить старший коэффициент к 1?
-    uint64_t seed = 12345;        // тип рандома
-
-    vector<float_precision> coefficients; // вектор коэффициентов на выходе
-    vector<float_precision>
-        real_roots_repeated; // вектор всех вещественных корней
-    vector<float_precision>
-        unique_real_roots; // вектор уникальных вещественных корней
-    vector<unsigned>
-        real_root_multiplicities; // вектор кратных вещественных корней
-    vector<complex<float_precision>> complex_roots; // вектор комплексных корней
-
-    generate_high_degree_polynomial(
-        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-        coefficients, real_roots_repeated, unique_real_roots,
-        real_root_multiplicities, complex_roots);
-
-    cout << "СГЕНЕРИРОВАННЫЙ ПОЛИНОМ:" << endl;
-    cout << "Степень: " << P << endl;
-
-    cout << endl << "Полином: ";
-    print_polynomial(coefficients);
-    cout << endl;
-
-    cout << "ИСХОДНЫЕ КОРНИ:" << endl;
-    cout << "Вещественные корни (с кратностями): ";
-    for (auto root : real_roots_repeated) {
-      cout << root << " ";
-    }
-    cout << endl;
-
-    cout << "Уникальные вещественные корни и их кратности:" << endl;
-    for (size_t i = 0; i < unique_real_roots.size(); ++i) {
-      cout << "  " << unique_real_roots[i] << " : кратность "
-           << real_root_multiplicities[i] << endl;
-    }
-
-    cout << "Комплексные корни (сопряженные пары):" << endl;
-    if (complex_roots.empty()) {
-      cout << "  нет" << endl;
-    } else {
-      for (size_t i = 0; i < complex_roots.size(); i += 2) {
-        cout << "  " << complex_roots[i] << " и " << complex_roots[i + 1]
-             << endl;
-      }
-    }
-
-    cout << endl << "ВЫЧИСЛЕНИЕ МЕТОДОМ ГРЕФЕ" << endl;
-    float_precision epsilon =
-        numeric_constants::adaptive_epsilon<float_precision>(
-            numeric_constants::EPSILON_SCALE_PRECISE);
-
-    // меняем порядок коэффициентов
-    vector<float_precision> coefficients_for_graeffe = coefficients;
-    reverse(coefficients_for_graeffe.begin(), coefficients_for_graeffe.end());
-
-    // ищем корни методом Грефе
-    int maxIterTest3 = 20;
-    vector<float_precision> computed_moduli = find_moduli_roots_by_graeffe(
-        coefficients_for_graeffe, epsilon, maxIterTest3);
-    cout << "Вычисленные модули корней: ";
-    if (computed_moduli.empty()) {
-      cout << "метод не нашел корней";
-    } else {
-      for (auto modulus : computed_moduli)
-        cout << modulus << " ";
-    }
-    cout << endl;
-
-    // ищем корни методом Грефе с учетом их кратности
-    auto moduli_with_mult = find_moduli_with_multiplicities_by_graeffe(
-        coefficients_for_graeffe, epsilon, maxIterTest3);
-    cout << "Модули с кратностями:" << endl;
-    if (moduli_with_mult.empty()) {
-      cout << "  не найдены" << endl;
-    } else {
-      for (const auto &m : moduli_with_mult)
-        cout << "  |r| = " << m.value << ", кратность = " << m.multiplicity
-             << endl;
-    }
-    cout << endl << endl;
-  }
-
-  // ТЕСТ 4
-  {
-    cout << "ТЕСТ 4: Полином с кластеризованными корнями (precision source)"
-         << endl;
-
-    unsigned P = 10;                      // степень полинома
-    unsigned num_complex_pairs = 0;       // кол-во комплексных пар
-    unsigned num_clusters = 0;            // кол-во кластеров
-    vector<unsigned> cluster_counts = {}; // сколько корней в каждом кластере
-    vector<float_precision> cluster_radii = {}; // радиусы кластеров
-    vector<pair<unsigned, unsigned>> multiplicity_groups =
-        {}; // сколько корней каждой кратности
-    float_precision default_cluster_radius =
-        0.1;                      // радиус кластера по умолчанию
-    bool normalize_coeffs = true; // приводить старший коэффициент к 1?
-    uint64_t seed = 8351;         // тип рандома
-
-    vector<float_precision> coefficients; // вектор коэффициентов на выходе
-    vector<float_precision>
-        real_roots_repeated; // вектор всех вещественных корней
-    vector<float_precision>
-        unique_real_roots; // вектор уникальных вещественных корней
-    vector<unsigned>
-        real_root_multiplicities; // вектор кратных вещественных корней
-    vector<complex<float_precision>> complex_roots; // вектор комплексных корней
-
-    generate_high_degree_polynomial(
-        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-        coefficients, real_roots_repeated, unique_real_roots,
-        real_root_multiplicities, complex_roots);
-
-    cout << "СГЕНЕРИРОВАННЫЙ ПОЛИНОМ:" << endl;
-    cout << "Степень: " << P << endl;
-
-    cout << endl << "Полином: ";
-    print_polynomial(coefficients);
-    cout << endl;
-
-    cout << "ИСХОДНЫЕ КОРНИ:" << endl;
-    cout << "Вещественные корни (с кратностями): ";
-    for (auto root : real_roots_repeated) {
-      cout << root << " ";
-    }
-    cout << endl;
-
-    cout << "Уникальные вещественные корни и их кратности:" << endl;
-    for (size_t i = 0; i < unique_real_roots.size(); ++i) {
-      cout << "  " << unique_real_roots[i] << " : кратность "
-           << real_root_multiplicities[i] << endl;
-    }
-
-    cout << "Комплексные корни (сопряженные пары):" << endl;
-    if (complex_roots.empty()) {
-      cout << "  нет" << endl;
-    } else {
-      for (size_t i = 0; i < complex_roots.size(); i += 2) {
-        cout << "  " << complex_roots[i] << " и " << complex_roots[i + 1]
-             << endl;
-      }
-    }
-
-    cout << endl << "ВЫЧИСЛЕНИЕ МЕТОДОМ ГРЕФЕ" << endl;
-    // Для float_precision используем разумную точность, так как время итераций
-    // растёт экспоненциально из-за накопления значащих цифр
-    float_precision epsilon =
-        numeric_constants::adaptive_epsilon<float_precision>(
-            numeric_constants::EPSILON_SCALE_STANDARD);
-    int maxIterTest4 = 20;
-    bool debugMode = false;
-
-    // меняем порядок коэффициентов
-    vector<float_precision> coefficients_for_graeffe = coefficients;
-    reverse(coefficients_for_graeffe.begin(), coefficients_for_graeffe.end());
-
-    // ищем корни методом Грефе
-    vector<float_precision> computed_moduli = find_moduli_roots_by_graeffe(
-        coefficients_for_graeffe, epsilon, maxIterTest4, debugMode);
-    cout << "Вычисленные модули корней: ";
-    if (computed_moduli.empty()) {
-      cout << "метод не нашел корней";
-    } else {
-      for (auto modulus : computed_moduli)
-        cout << modulus << " ";
-    }
-    cout << endl;
-
-    // ищем корни методом Грефе с учетом их кратности (без повторной отладки)
-    auto moduli_with_mult = find_moduli_with_multiplicities_by_graeffe(
-        coefficients_for_graeffe, epsilon, maxIterTest4, false);
-    cout << "Модули с кратностями:" << endl;
-    if (moduli_with_mult.empty()) {
-      cout << "  не найдены" << endl;
-    } else {
-      for (const auto &m : moduli_with_mult)
-        cout << "  |r| = " << m.value << ", кратность = " << m.multiplicity
-             << endl;
-    }
-    cout << endl << endl;
-  }
-
-  // ТЕСТ 5
-  {
-    cout << "ТЕСТ 5: Полином степени 30 с кластерами (3 шт.) и precision source"
-         << endl;
-
-    unsigned P = 30;                // степень полинома
-    unsigned num_complex_pairs = 0; // кол-во комплексных пар
-    unsigned num_clusters = 3;      // кол-во кластеров
-    vector<unsigned> cluster_counts = {2, 3,
-                                       6}; // сколько корней в каждом кластере
-    vector<float_precision> cluster_radii = {0.001, 0.01,
-                                             0.0001}; // радиусы кластеров
-    vector<pair<unsigned, unsigned>> multiplicity_groups =
-        {}; // сколько корней каждой кратности
-    float_precision default_cluster_radius =
-        0.1;                      // радиус кластера по умолчанию
-    bool normalize_coeffs = true; // приводить старший коэффициент к 1?
-    uint64_t seed = 12345;        // тип рандома
-
-    vector<float_precision> coefficients; // вектор коэффициентов на выходе
-    vector<float_precision>
-        real_roots_repeated; // вектор всех вещественных корней
-    vector<float_precision>
-        unique_real_roots; // вектор уникальных вещественных корней
-    vector<unsigned>
-        real_root_multiplicities; // вектор кратных вещественных корней
-    vector<complex<float_precision>> complex_roots; // вектор комплексных корней
-
-    generate_high_degree_polynomial(
-        P, num_complex_pairs, num_clusters, cluster_counts, cluster_radii,
-        multiplicity_groups, default_cluster_radius, normalize_coeffs, seed,
-        coefficients, real_roots_repeated, unique_real_roots,
-        real_root_multiplicities, complex_roots);
-
-    cout << "СГЕНЕРИРОВАННЫЙ ПОЛИНОМ:" << endl;
-    cout << "Степень: " << P << endl;
-
-    cout << endl << "Полином: ";
-    print_polynomial(coefficients);
-    cout << endl;
-
-    cout << "ИСХОДНЫЕ КОРНИ:" << endl;
-    cout << "Вещественные корни (с кратностями): ";
-    for (auto root : real_roots_repeated) {
-      cout << root << " ";
-    }
-    cout << endl;
-
-    cout << "Уникальные вещественные корни и их кратности:" << endl;
-    for (size_t i = 0; i < unique_real_roots.size(); ++i) {
-      cout << "  " << unique_real_roots[i] << " : кратность "
-           << real_root_multiplicities[i] << endl;
-    }
-
-    cout << "Комплексные корни (сопряженные пары):" << endl;
-    if (complex_roots.empty()) {
-      cout << "  нет" << endl;
-    } else {
-      for (size_t i = 0; i < complex_roots.size(); i += 2) {
-        cout << "  " << complex_roots[i] << " и " << complex_roots[i + 1]
-             << endl;
-      }
-    }
-
-    cout << endl << "ВЫЧИСЛЕНИЕ МЕТОДОМ ГРЕФЕ" << endl;
-    // Для float_precision степени 30 используем меньшую точность и меньше
-    // итераций т.к. arbitrary precision очень медленный на высоких степенях
-    float_precision epsilon =
-        numeric_constants::adaptive_epsilon<float_precision>(
-            numeric_constants::EPSILON_SCALE_PRECISE *
-            100);          // Ослаблена точность для скорости
-    int maxIterTest5 = 10; // Ограничено число итераций
-    bool debugMode = false;
-
-    // меняем порядок коэффициентов
-    vector<float_precision> coefficients_for_graeffe = coefficients;
-    reverse(coefficients_for_graeffe.begin(), coefficients_for_graeffe.end());
-
-    // ищем корни методом Грефе
-    vector<float_precision> computed_moduli = find_moduli_roots_by_graeffe(
-        coefficients_for_graeffe, epsilon, maxIterTest5, debugMode);
-    cout << "Вычисленные модули корней: ";
-    if (computed_moduli.empty()) {
-      cout << "метод не нашел корней";
-    } else {
-      for (auto modulus : computed_moduli)
-        cout << modulus << " ";
-    }
-    cout << endl;
-
-    // ищем корни методом Грефе с учетом их кратности (без повторной отладки)
-    auto moduli_with_mult = find_moduli_with_multiplicities_by_graeffe(
-        coefficients_for_graeffe, epsilon, maxIterTest5, false);
-    cout << "Модули с кратностями:" << endl;
-    if (moduli_with_mult.empty()) {
-      cout << "  не найдены" << endl;
-    } else {
-      for (const auto &m : moduli_with_mult)
-        cout << "  |r| = " << m.value << ", кратность = " << m.multiplicity
-             << endl;
-    }
-    cout << endl << endl;
-  }
+    cout << "\n=========================================\n";
+    cout << "ВСЕ ТЕСТЫ ЗАВЕРШЕНЫ\n";
+    cout << "=========================================\n";
 }
 
 int main() {
