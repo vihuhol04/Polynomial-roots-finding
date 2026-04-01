@@ -1,240 +1,132 @@
-// Файл для тестирования метода Сагралова – поиск комплексных корней
-// Реализация: Павлова Анастасия, КМБО-01-22 (расширенная версия)
+// Тестирование CIsolate (комплексная изоляция корней - диски)
+// Степени 5-30, вещ./компл./кластериз./кратные, double/long double
+// CIsolate работает с long double по умолчанию; float_precision не поддерживается
+// Результаты -> .txt
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+#include <algorithm>
+#include <chrono>
+#include <complex>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <vector>
 
 #include "Sagralov_complex_roots.h"
+#include "NumericConstants.h"
 #include "generate_high_degree_polynomial.h"
-
-#include <complex>
-#include <iostream>
-#include <vector>
-#include <iomanip>
-#include <algorithm>
 
 using namespace std;
 
-// =========================================
-// ВЫВОД ДИСКОВ
-// =========================================
-template<typename fp_t>
-void print_disks(const vector<Disk<fp_t>>& disks) {
+template <typename T> double to_dbl(const T &v) { return static_cast<double>(v); }
 
-    cout << "Найдено дисков: " << disks.size() << endl;
-
-    fp_t total_radius = fp_t(0);
-    fp_t max_radius = fp_t(0);
-    int total_roots = 0;
-
-    for (const auto& d : disks) {
-        cout << "Центр: " << d.center
-            << " | Радиус: " << d.radius
-            << " | Корней: " << d.num_roots << endl;
-
-        total_radius += d.radius;
-
-        if (d.radius > max_radius)
-            max_radius = d.radius;
-
-        total_roots += d.num_roots;
-    }
-
-    cout << "\nСУММАРНО:\n";
-    cout << "  Всего корней: " << total_roots << endl;
-
-    if (!disks.empty()) {
-        cout << "  Средний радиус: "
-            << total_radius / static_cast<fp_t>(disks.size()) << endl;
-    }
-    else {
-        cout << "  Средний радиус: 0\n";
-    }
-
-    cout << "  Макс радиус: " << max_radius << endl;
+template <typename Tin>
+string tname_in() {
+	if constexpr (is_same_v<Tin,double>) return "double";
+	else return "long double";
 }
 
-// =========================================
-// УНИВЕРСАЛЬНЫЙ ТЕСТ
-// =========================================
-template<typename fp_t>
-static void run_single_test(
-    const string& name,
-    unsigned P,
-    unsigned num_complex_pairs,
-    unsigned num_clusters,
-    const vector<unsigned>& cluster_counts,
-    const vector<fp_t>& cluster_radii,
-    const vector<pair<unsigned, unsigned>>& multiplicity_groups,
-    fp_t default_cluster_radius,
-    uint64_t seed) {
-
-    cout << "\n=========================================\n";
-    cout << name << endl;
-    cout << "Степень: " << P << endl;
-    cout << "=========================================\n";
-
-    vector<fp_t> coefficients;
-    vector<fp_t> real_roots_repeated;
-    vector<fp_t> unique_real_roots;
-    vector<unsigned> real_root_multiplicities;
-    vector<complex<fp_t>> complex_roots;
-
-    generate_high_degree_polynomial(
-        P,
-        num_complex_pairs,
-        num_clusters,
-        cluster_counts,
-        cluster_radii,
-        multiplicity_groups,
-        default_cluster_radius,
-        true,
-        seed,
-        coefficients,
-        real_roots_repeated,
-        unique_real_roots,
-        real_root_multiplicities,
-        complex_roots);
-
-    cout << "\nПолином:\n";
-    print_polynomial(coefficients);
-
-    auto disks = CIsolate<fp_t, fp_t>(coefficients);
-
-    cout << "\nРЕЗУЛЬТАТ:\n";
-    print_disks(disks);
+template <typename Tin, typename T>
+int count_covered(const vector<Tin> &real_roots,
+                  const vector<complex<Tin>> &complex_roots,
+                  const vector<Disk<T>> &disks) {
+	int covered=0;
+	auto in_disk = [&](double re, double im) -> bool {
+		for (auto &d : disks) {
+			double dx=re-to_dbl(d.center.real());
+			double dy=im-to_dbl(d.center.imag());
+			if (sqrt(dx*dx+dy*dy) <= to_dbl(d.radius)*1.1+1e-8)
+				return true;
+		}
+		return false;
+	};
+	for (auto &r : real_roots)
+		if (in_disk(to_dbl(r), 0.0)) ++covered;
+	for (auto &c : complex_roots)
+		if (in_disk(to_dbl(c.real()), to_dbl(c.imag()))) ++covered;
+	return covered;
 }
 
-// =========================================
-// ОСНОВНОЙ РАННЕР
-// =========================================
-static void run_sagralov_tests() {
+struct TR { string name,dtype; int deg,disks,expected,covered,total_roots_in_disks; double ms; bool ok; };
 
-    cout << "\n=========================================\n";
-    cout << "ТЕСТИРОВАНИЕ МЕТОДА САГРАЛОВА (КОМПЛЕКСНЫЕ КОРНИ)\n";
-    cout << "=========================================\n";
-
-    vector<unsigned> degrees = { 5, 10, 20, 30, 50 };
-
-    // =========================================
-    // DOUBLE
-    // =========================================
-    cout << "\n===== DOUBLE =====\n";
-
-    for (unsigned P : degrees) {
-
-        uint64_t base_seed = 12345ULL + static_cast<uint64_t>(P) * 10ULL;
-
-        // Простые
-        run_single_test<double>(
-            "Простые комплексные корни",
-            P,
-            P / 2,
-            0,
-            {},
-            {},
-            {},
-            0.1,
-            base_seed + 1ULL);
-
-        // Кластеры
-        run_single_test<double>(
-            "Кластеризованные корни",
-            P,
-            P / 3,
-            2,
-            { P / 5, P / 6 },
-            { 1e-3, 1e-2 },
-            {},
-            0.1,
-            base_seed + 2ULL);
-
-        // Кратные
-        run_single_test<double>(
-            "Кратные комплексные корни",
-            P,
-            P / 3,
-            0,
-            {},
-            {},
-            { {2, P / 6}, {3, P / 8} },
-            0.1,
-            base_seed + 3ULL);
-
-        // Смешанные
-        run_single_test<double>(
-            "Смешанный случай",
-            P,
-            P / 4,
-            2,
-            { P / 6, P / 7 },
-            { 1e-3, 5e-3 },
-            { {2, P / 7} },
-            0.1,
-            base_seed + 4ULL);
-    }
-
-    // =========================================
-    // HIGH PRECISION
-    // =========================================
-    cout << "\n===== FLOAT_PRECISION =====\n";
-
-    vector<unsigned> hp_degrees = { 10, 20, 30 };
-
-    for (unsigned P : hp_degrees) {
-
-        uint64_t base_seed = 54321ULL + static_cast<uint64_t>(P) * 10ULL;
-
-        run_single_test<float_precision>(
-            "HP: Простые",
-            P,
-            P / 2,
-            0,
-            {},
-            {},
-            {},
-            static_cast<float_precision>(0.1),
-            base_seed + 1ULL);
-
-        run_single_test<float_precision>(
-            "HP: Кластеры",
-            P,
-            P / 3,
-            2,
-            { P / 5, P / 6 },
-            { static_cast<float_precision>(1e-4),
-             static_cast<float_precision>(1e-3) },
-            {},
-            static_cast<float_precision>(0.1),
-            base_seed + 2ULL);
-
-        run_single_test<float_precision>(
-            "HP: Смешанный",
-            P,
-            P / 4,
-            2,
-            { P / 6, P / 7 },
-            { static_cast<float_precision>(1e-4),
-             static_cast<float_precision>(5e-4) },
-            { {2, P / 6} },
-            static_cast<float_precision>(0.1),
-            base_seed + 3ULL);
-    }
-
-    cout << "\n=========================================\n";
-    cout << "ВСЕ ТЕСТЫ ЗАВЕРШЕНЫ\n";
-    cout << "=========================================\n";
+template <typename Tin, typename T=long double>
+TR run_test(const string &nm, unsigned P, unsigned ncp, unsigned ncl,
+            const vector<unsigned>&cc, const vector<Tin>&crad,
+            const vector<pair<unsigned,unsigned>>&mg, Tin dcr, uint64_t seed,
+            ostream &log) {
+	TR r; r.name=nm; r.dtype=tname_in<Tin>(); r.deg=P;
+	vector<Tin> coef,rrep,uq; vector<unsigned> rm; vector<complex<Tin>> cx;
+	generate_high_degree_polynomial(P,ncp,ncl,cc,crad,mg,dcr,true,seed,coef,rrep,uq,rm,cx);
+	r.expected=int(rrep.size()+cx.size());
+	auto t0=chrono::high_resolution_clock::now();
+	auto disks=CIsolate<Tin,T>(coef);
+	r.ms=chrono::duration<double,milli>(chrono::high_resolution_clock::now()-t0).count();
+	r.disks=int(disks.size());
+	r.total_roots_in_disks=0;
+	for(auto &d : disks) r.total_roots_in_disks+=d.num_roots;
+	r.covered=count_covered(rrep,cx,disks);
+	r.ok=(r.covered>=int(r.expected*0.5))&&r.disks>0;
+	log<<"  "<<nm<<" ["<<tname_in<Tin>()<<"] deg="<<P
+	   <<"  дисков="<<r.disks<<"  корн.в дисках="<<r.total_roots_in_disks
+	   <<"  ожид.="<<r.expected<<"  покрыто="<<r.covered
+	   <<"  "<<fixed<<setprecision(1)<<r.ms<<"мс  "<<(r.ok?"PASSED":"FAILED")<<endl;
+	return r;
 }
 
-// =========================================
-// MAIN
-// =========================================
-int main() {
-    setlocale(LC_ALL, "ru_RU.UTF-8");
+template <typename Tin> vector<TR> run_all(ostream &log) {
+	vector<TR> res;
+	log<<"\n=== CIsolate (компл.диски): "<<tname_in<Tin>()<<" ===\n";
+	for(unsigned d:{5u,10u,15u,20u}){
+		Tin dc=Tin(0.1); vector<Tin> cr;
+		res.push_back(run_test<Tin>("Веществ.",d,0,0,{},cr,{},dc,12345+d,log));
+	}
+	for(unsigned d:{6u,10u,20u}){
+		Tin dc=Tin(0.1); vector<Tin> cr;
+		res.push_back(run_test<Tin>("Компл.",d,d/4,0,{},cr,{},dc,54321+d,log));
+	}
+	for(unsigned d:{10u,15u}){
+		Tin dc=Tin(0.1); vector<Tin> cr={Tin(0.01),Tin(0.01)};
+		res.push_back(run_test<Tin>("Кластер.",d,0,2,{3,3},cr,{},dc,99999+d,log));
+	}
+	for(unsigned d:{10u,15u}){
+		Tin dc=Tin(0.1); vector<Tin> cr;
+		vector<pair<unsigned,unsigned>> mg={{2,2}};
+		res.push_back(run_test<Tin>("Кратные",d,0,0,{},cr,mg,dc,77777+d,log));
+	}
+	for(unsigned d:{25u,30u}){
+		Tin dc=Tin(0.1); vector<Tin> cr;
+		res.push_back(run_test<Tin>("Высок.",d,d/5,0,{},cr,{},dc,33333+d,log));
+	}
+	return res;
+}
 
-    try {
-        run_sagralov_tests();
-        return EXIT_SUCCESS;
-    }
-    catch (const exception& e) {
-        cerr << "ОШИБКА: " << e.what() << endl;
-        return EXIT_FAILURE;
-    }
+void save(const vector<TR>&r,const string&fn){
+	ofstream o(fn); if(!o) return;
+	o<<"========================================================================\n";
+	o<<"CIsolate (комплексные корни, изолирующие диски)\nТип: "<<(r.empty()?"":r[0].dtype)<<"\n";
+	o<<"========================================================================\n\n";
+	o<<left<<setw(16)<<"Тест"<<setw(8)<<"Степ."<<setw(10)<<"Дисков"<<setw(12)<<"Корн.дисков"
+	 <<setw(10)<<"Ожид."<<setw(10)<<"Покрыто"<<setw(12)<<"Время,мс"<<setw(10)<<"Статус\n"<<string(88,'-')<<"\n";
+	int p=0,t=0;
+	for(auto&x:r){o<<left<<setw(16)<<x.name<<setw(8)<<x.deg<<setw(10)<<x.disks
+	  <<setw(12)<<x.total_roots_in_disks<<setw(10)<<x.expected<<setw(10)<<x.covered
+	  <<setw(12)<<fixed<<setprecision(1)<<x.ms
+	  <<setw(10)<<(x.ok?"PASSED":"FAILED")<<"\n"; ++t; if(x.ok)++p;}
+	o<<"\nИтого: "<<p<<" из "<<t<<" пройдено.\n"; o.close();
+	cout<<"Сохранено: "<<fn<<endl;
+}
+
+int main(){
+#ifdef _WIN32
+	SetConsoleOutputCP(65001); SetConsoleCP(65001);
+#endif
+	cout<<"=== ТЕСТ: CIsolate (компл.) ===\n";
+	{stringstream l; auto r=run_all<double>(l); cout<<l.str(); save(r,"cisolate_double.txt");}
+	{stringstream l; auto r=run_all<long double>(l); cout<<l.str(); save(r,"cisolate_long_double.txt");}
+	cout<<"\nCIsolate — все тесты завершены.\n";
+	return 0;
 }

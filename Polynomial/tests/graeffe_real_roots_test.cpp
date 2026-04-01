@@ -1,10 +1,18 @@
-// Файл для тестирования метода Грефе (вещественные корни). Тестируем улучшенный
-// алгоритм с отбросом дублирующихся модулей Реализация: Павлова Анастасия,
-// КМБО-01-22
+// Тестирование метода Грефе (вещественные модули корней)
+// Степени 5-100, вещ./компл./кластериз./кратные, double/long double/float_precision
+// Результаты -> .txt
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include <algorithm>
+#include <chrono>
 #include <complex>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include "Graeffe_real_roots.h"
@@ -13,247 +21,119 @@
 
 using namespace std;
 
-// Основная функция тестирования - генерирует полиномы и тестирует метод Грефе
-void run_graeffe_tests() {
-    cout << "\n=========================================\n";
-    cout << "РАСШИРЕННОЕ ТЕСТИРОВАНИЕ МЕТОДА ГРЕФЕ\n";
-    cout << "=========================================\n";
-
-    int test_id = 0;
-
-    // степени
-    vector<unsigned> degrees = { 5, 10, 15, 20, 30, 40, 50, 75, 100 };
-
-    // типы сценариев
-    enum ScenarioType {
-        SIMPLE,
-        MULTIPLE,
-        CLUSTERED,
-        MIXED
-    };
-
-    vector<ScenarioType> scenarios = {
-        SIMPLE, MULTIPLE, CLUSTERED, MIXED };
-
-    // =========================
-    // ТЕСТЫ ДЛЯ double
-    // =========================
-    cout << "\n===== ТЕСТЫ (double) =====\n";
-
-    for (auto P : degrees) {
-        for (auto scenario : scenarios) {
-            cout << "\n-----------------------------------------\n";
-            cout << "ТЕСТ #" << test_id++
-                << " | degree=" << P << " | type=double\n";
-
-            unsigned num_complex_pairs = 0;
-            unsigned num_clusters = 0;
-            vector<unsigned> cluster_counts;
-            vector<double> cluster_radii;
-            vector<pair<unsigned, unsigned>> multiplicity_groups;
-
-            switch (scenario) {
-            case SIMPLE:
-                cout << "Сценарий: простые корни\n";
-                break;
-
-            case MULTIPLE:
-                cout << "Сценарий: кратные корни\n";
-                multiplicity_groups = { {2, P / 4}, {3, P / 6} };
-                break;
-
-            case CLUSTERED:
-                cout << "Сценарий: кластеризованные корни\n";
-                num_clusters = 2;
-                cluster_counts = { P / 4, P / 5 };
-                cluster_radii = { 1e-3, 1e-2 };
-                break;
-
-            case MIXED:
-                cout << "Сценарий: смешанный\n";
-                num_clusters = 2;
-                cluster_counts = { P / 5, P / 6 };
-                cluster_radii = { 1e-3, 5e-3 };
-                multiplicity_groups = { {2, P / 6} };
-                break;
-            }
-
-            double default_cluster_radius = 0.1;
-            bool normalize_coeffs = true;
-            uint64_t seed = 12345 + P * 10 + scenario;
-
-            vector<double> coefficients;
-            vector<double> real_roots_repeated;
-            vector<double> unique_real_roots;
-            vector<unsigned> real_root_multiplicities;
-            vector<complex<double>> complex_roots;
-
-            generate_high_degree_polynomial(
-                P, num_complex_pairs, num_clusters,
-                cluster_counts, cluster_radii,
-                multiplicity_groups, default_cluster_radius,
-                normalize_coeffs, seed,
-                coefficients, real_roots_repeated,
-                unique_real_roots, real_root_multiplicities,
-                complex_roots);
-
-            double epsilon =
-                numeric_constants::adaptive_epsilon<double>(
-                    numeric_constants::EPSILON_SCALE_STANDARD);
-
-            int maxIter = (P > 50) ? 10 : 20;
-
-            vector<double> coeffs = coefficients;
-            reverse(coeffs.begin(), coeffs.end());
-
-            auto moduli = find_moduli_roots_by_graeffe(
-                coeffs, epsilon, maxIter);
-
-            auto moduli_mult =
-                find_moduli_with_multiplicities_by_graeffe(
-                    coeffs, epsilon, maxIter);
-
-            cout << "Найдено модулей: " << moduli.size() << endl;
-
-            if (!moduli.empty()) {
-                cout << "Первые 5: ";
-                for (size_t i = 0; i < moduli.size() && i < 5; ++i)
-                    cout << moduli[i] << " ";
-                cout << endl;
-            }
-
-            if (!moduli_mult.empty()) {
-                cout << "С кратностями (до 3):\n";
-                for (size_t i = 0; i < moduli_mult.size() && i < 3; ++i)
-                    cout << "  |r|=" << moduli_mult[i].value
-                    << " mult=" << moduli_mult[i].multiplicity << endl;
-            }
-
-            cout << "РЕЗУЛЬТАТ: "
-                << (!moduli.empty() ? "PASSED" : "FAILED")
-                << endl;
-        }
-    }
-
-    // =========================
-    // ТЕСТЫ ДЛЯ float_precision
-    // =========================
-    cout << "\n===== ТЕСТЫ (float_precision) =====\n";
-
-    for (auto P : degrees) {
-        for (auto scenario : scenarios) {
-            cout << "\n-----------------------------------------\n";
-            cout << "ТЕСТ #" << test_id++
-                << " | degree=" << P << " | type=high_precision\n";
-
-            unsigned num_complex_pairs = 0;
-            unsigned num_clusters = 0;
-            vector<unsigned> cluster_counts;
-            vector<float_precision> cluster_radii;
-            vector<pair<unsigned, unsigned>> multiplicity_groups;
-
-            switch (scenario) {
-            case SIMPLE:
-                cout << "Сценарий: простые корни\n";
-                break;
-
-            case MULTIPLE:
-                cout << "Сценарий: кратные корни\n";
-                multiplicity_groups = { {2, P / 4}, {3, P / 6} };
-                break;
-
-            case CLUSTERED:
-                cout << "Сценарий: кластеризованные корни\n";
-                num_clusters = 2;
-                cluster_counts = { P / 4, P / 5 };
-                cluster_radii = { 1e-4, 1e-3 };
-                break;
-
-            case MIXED:
-                cout << "Сценарий: смешанный\n";
-                num_clusters = 2;
-                cluster_counts = { P / 5, P / 6 };
-                cluster_radii = { 1e-4, 5e-4 };
-                multiplicity_groups = { {2, P / 6} };
-                break;
-            }
-
-            float_precision default_cluster_radius = 0.1;
-            bool normalize_coeffs = true;
-            uint64_t seed = 9999 + P * 7 + scenario;
-
-            vector<float_precision> coefficients;
-            vector<float_precision> real_roots_repeated;
-            vector<float_precision> unique_real_roots;
-            vector<unsigned> real_root_multiplicities;
-            vector<complex<float_precision>> complex_roots;
-
-            generate_high_degree_polynomial(
-                P, num_complex_pairs, num_clusters,
-                cluster_counts, cluster_radii,
-                multiplicity_groups, default_cluster_radius,
-                normalize_coeffs, seed,
-                coefficients, real_roots_repeated,
-                unique_real_roots, real_root_multiplicities,
-                complex_roots);
-
-            float_precision epsilon =
-                numeric_constants::adaptive_epsilon<float_precision>(
-                    numeric_constants::EPSILON_SCALE_PRECISE);
-
-            int maxIter = (P > 50) ? 8 : 15;
-
-            vector<float_precision> coeffs = coefficients;
-            reverse(coeffs.begin(), coeffs.end());
-
-            auto moduli = find_moduli_roots_by_graeffe(
-                coeffs, epsilon, maxIter);
-
-            auto moduli_mult =
-                find_moduli_with_multiplicities_by_graeffe(
-                    coeffs, epsilon, maxIter);
-
-            cout << "Найдено модулей: " << moduli.size() << endl;
-
-            if (!moduli.empty()) {
-                cout << "Первые 5: ";
-                for (size_t i = 0; i < moduli.size() && i < 5; ++i)
-                    cout << moduli[i] << " ";
-                cout << endl;
-            }
-
-            if (!moduli_mult.empty()) {
-                cout << "С кратностями (до 3):\n";
-                for (size_t i = 0; i < moduli_mult.size() && i < 3; ++i)
-                    cout << "  |r|=" << moduli_mult[i].value
-                    << " mult=" << moduli_mult[i].multiplicity << endl;
-            }
-
-            cout << "РЕЗУЛЬТАТ: "
-                << (!moduli.empty() ? "PASSED" : "FAILED")
-                << endl;
-        }
-    }
-
-    cout << "\n=========================================\n";
-    cout << "ВСЕ ТЕСТЫ ЗАВЕРШЕНЫ\n";
-    cout << "=========================================\n";
+template <typename T> double to_dbl(const T &v) { return static_cast<double>(v); }
+template <typename T> string tname() {
+	if constexpr (is_same_v<T,double>) return "double";
+	else if constexpr (is_same_v<T,long double>) return "long double";
+	else return "float_precision";
 }
 
-int main() {
-  // Установка русской локали для корректного вывода
-  setlocale(LC_ALL, "ru_RU.UTF-8");
+template <typename T>
+vector<T> expected_moduli(const vector<T> &rr, const vector<complex<T>> &cr) {
+	vector<T> m;
+	for (auto &r : rr) m.push_back(abs_val(r));
+	for (auto &c : cr) m.push_back(sqrt_val(c.real()*c.real()+c.imag()*c.imag()));
+	sort(m.begin(), m.end(), [](const T&a,const T&b){return a>b;});
+	return m;
+}
 
-  try {
-    cout << "ТЕСТИРОВАНИЕ МЕТОДА ГРЕФЕ" << endl;
-    cout << "Генерация полиномов и вычисление модулей корней" << endl << endl;
+template <typename T>
+double max_err(const vector<T> &comp, const vector<T> &exp_m) {
+	int ne=int(exp_m.size()), nc=int(comp.size());
+	if(!ne) return 0;
+	double mx=0;
+	vector<bool> used(nc,false);
+	for (int i=0;i<ne;++i) {
+		double e=to_dbl(exp_m[i]), best=1e30; int bj=-1;
+		for (int j=0;j<nc;++j) { if(used[j]) continue; double d=abs(to_dbl(comp[j])-e); if(d<best){best=d;bj=j;} }
+		if(bj>=0){used[bj]=true; mx=max(mx, best/max(abs(e),0.01));}
+		else mx=max(mx, abs(e)>0.01?1.0:0.01);
+	}
+	return mx;
+}
 
-    run_graeffe_tests();
+struct TR { string name,dtype; int deg,found,expected; double err,ms; bool ok; };
 
-    cout << "ТЕСТИРОВАНИЕ ЗАВЕРШЕНО " << endl;
-    return EXIT_SUCCESS;
-  } catch (const exception &e) {
-    cerr << "ОШИБКА: " << e.what() << endl;
-    return EXIT_FAILURE;
-  }
+template <typename T>
+TR run_test(const string &nm, unsigned P, unsigned ncp, unsigned ncl,
+            const vector<unsigned>&cc, const vector<T>&cr,
+            const vector<pair<unsigned,unsigned>>&mg, T dcr, uint64_t seed,
+            T tol, int maxIt, ostream &log) {
+	TR r; r.name=nm; r.dtype=tname<T>(); r.deg=P;
+	vector<T> coef,rrep; vector<T> uq; vector<unsigned> rm; vector<complex<T>> cx;
+	generate_high_degree_polynomial(P,ncp,ncl,cc,cr,mg,dcr,true,seed,coef,rrep,uq,rm,cx);
+	vector<T> desc(coef.rbegin(),coef.rend());
+	T eps=numeric_constants::adaptive_epsilon<T>(numeric_constants::EPSILON_SCALE_PRECISE);
+	auto t0=chrono::high_resolution_clock::now();
+	auto mods=find_moduli_roots_by_graeffe(desc,eps,maxIt);
+	r.ms=chrono::duration<double,milli>(chrono::high_resolution_clock::now()-t0).count();
+	auto em=expected_moduli(rrep,cx);
+	r.expected=int(em.size()); r.found=int(mods.size());
+	sort(mods.begin(),mods.end(),[](const T&a,const T&b){return a>b;});
+	r.err=max_err(mods,em); r.ok=(r.err<to_dbl(tol))&&r.found>0;
+	log<<"  "<<nm<<" ["<<tname<T>()<<"] deg="<<P
+	   <<"  "<<r.found<<"/"<<r.expected<<"  err="<<scientific<<setprecision(3)<<r.err
+	   <<"  "<<fixed<<setprecision(1)<<r.ms<<"мс  "<<(r.ok?"PASSED":"FAILED")<<endl;
+	return r;
+}
+
+template <typename T> vector<TR> run_all(ostream &log) {
+	vector<TR> res; T tol; int mi=30;
+	if constexpr(is_same_v<T,float_precision>){tol=T("0.5");mi=15;} else tol=T(0.5);
+	log<<"\n=== ГРЕФЕ (вещ. модули): "<<tname<T>()<<" ===\n";
+	for(unsigned d:{5u,10u,20u,30u,50u}){
+		if constexpr(is_same_v<T,float_precision>) if(d>20) continue;
+		T dc; if constexpr(is_same_v<T,float_precision>) dc=T("0.1"); else dc=T(0.1);
+		vector<T> cr; res.push_back(run_test<T>("Веществ.",d,0,0,{},cr,{},dc,12345+d,tol,mi,log));
+	}
+	for(unsigned d:{10u,20u,30u}){
+		if constexpr(is_same_v<T,float_precision>) if(d>20) continue;
+		T dc; if constexpr(is_same_v<T,float_precision>) dc=T("0.1"); else dc=T(0.1);
+		vector<T> cr; res.push_back(run_test<T>("Компл.",d,d/4,0,{},cr,{},dc,54321+d,tol,mi,log));
+	}
+	for(unsigned d:{10u,20u}){
+		T r1,r2,dc; if constexpr(is_same_v<T,float_precision>){r1=T("0.01");r2=T("0.01");dc=T("0.1");}
+		else{r1=T(0.01);r2=T(0.01);dc=T(0.1);}
+		vector<T> cr={r1,r2};
+		res.push_back(run_test<T>("Кластер.",d,0,2,{3,3},cr,{},dc,99999+d,tol,mi,log));
+	}
+	for(unsigned d:{10u,20u}){
+		if constexpr(is_same_v<T,float_precision>) if(d>15) continue;
+		T dc; if constexpr(is_same_v<T,float_precision>) dc=T("0.1"); else dc=T(0.1);
+		vector<T> cr; vector<pair<unsigned,unsigned>> mg={{2,2},{3,1}};
+		res.push_back(run_test<T>("Кратные",d,0,0,{},cr,mg,dc,77777+d,tol,mi,log));
+	}
+	if constexpr(!is_same_v<T,float_precision>)
+		for(unsigned d:{60u,80u,100u}){
+			T dc=T(0.1); vector<T> cr;
+			res.push_back(run_test<T>("Высок.",d,d/5,0,{},cr,{},dc,33333+d,tol,mi,log));
+		}
+	return res;
+}
+
+void save(const vector<TR>&r,const string&fn){
+	ofstream o(fn); if(!o) return;
+	o<<"========================================================================\n";
+	o<<"ГРЕФЕ (вещественные модули корней)\nТип: "<<(r.empty()?"":r[0].dtype)<<"\n";
+	o<<"========================================================================\n\n";
+	o<<left<<setw(16)<<"Тест"<<setw(8)<<"Степ."<<setw(12)<<"Найд."<<setw(12)<<"Ожид."
+	 <<setw(16)<<"Макс.ошиб."<<setw(12)<<"Время,мс"<<setw(10)<<"Статус\n"<<string(86,'-')<<"\n";
+	int p=0,t=0;
+	for(auto&x:r){o<<left<<setw(16)<<x.name<<setw(8)<<x.deg<<setw(12)<<x.found<<setw(12)<<x.expected
+	  <<setw(16)<<scientific<<setprecision(3)<<x.err<<setw(12)<<fixed<<setprecision(1)<<x.ms
+	  <<setw(10)<<(x.ok?"PASSED":"FAILED")<<"\n"; ++t; if(x.ok)++p;}
+	o<<"\nИтого: "<<p<<" из "<<t<<" пройдено.\n"; o.close();
+	cout<<"Сохранено: "<<fn<<endl;
+}
+
+int main(){
+#ifdef _WIN32
+	SetConsoleOutputCP(65001); SetConsoleCP(65001);
+#endif
+	cout<<"=== ТЕСТ: ГРЕФЕ (вещ. модули) ===\n";
+	{stringstream l; auto r=run_all<double>(l); cout<<l.str(); save(r,"graeffe_real_double.txt");}
+	{stringstream l; auto r=run_all<long double>(l); cout<<l.str(); save(r,"graeffe_real_long_double.txt");}
+	{stringstream l; auto r=run_all<float_precision>(l); cout<<l.str(); save(r,"graeffe_real_float_precision.txt");}
+	cout<<"\nГрефе (вещ.) — все тесты завершены.\n";
+	return 0;
 }
