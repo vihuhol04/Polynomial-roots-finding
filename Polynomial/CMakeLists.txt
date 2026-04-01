@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+﻿cmake_minimum_required(VERSION 3.10)
 project(PolynomialProject LANGUAGES CXX)
 
 # Для clangd/clang: экспорт базы команд компиляции
@@ -30,18 +30,25 @@ find_package(Threads REQUIRED)
 # Создаем библиотеку PrecisionSource
 add_library(PrecisionSource STATIC
     precisionSource/vendor/hvks/precisioncore.cpp
-    precisionSource/multipolyprecision.h
     precisionSource/mathUtils.h
     precisionSource/polynomialUtils.h
     precisionSource/NumericConcepts.h
 
     methods/Continued_Fractions/Con_Frac.h
     methods/Continued_Fractions/Con_Frac_Helper.h
+    methods/Wilf/Wilf.h
+    methods/Wilf/wilf_root_finder.hpp
+    methods/Bairstow/Bairstow.h
+    methods/Bairstow/Bairstow_Helper.h
+    methods/JenkinsTraub/JenkinsTraub.h
+    methods/JenkinsTraub/JenkinsTraub_Helper.h
     methods/Sagralov/Sagralov_real_roots.h
     methods/Helper_for_all_methods.h
     
     methods/Graeffe/Graeffe_real_roots.h
     methods/Graeffe/Graeffe_complex_roots.h
+    methods/Graeffe/Graeffe_Jurchse.h
+    methods/Graeffe/Graeffe_SanJuan.h
     methods/Sagralov/Sagralov_complex_roots.h 
     methods/Sagralov/Sagralov_detail.h
     methods/Sagralov/Sagralov_ANewDsc.h
@@ -54,6 +61,9 @@ target_include_directories(PrecisionSource PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/methods/Graeffe
     ${CMAKE_CURRENT_SOURCE_DIR}/methods/Sagralov
     ${CMAKE_CURRENT_SOURCE_DIR}/methods/Continued_Fractions
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods/Wilf
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods/Bairstow
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods/JenkinsTraub
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -147,7 +157,89 @@ target_include_directories(sagralov_complex_roots_test PRIVATE
 
 add_test(NAME sagralov_complex_roots_test COMMAND sagralov_complex_roots_test)
 
+# Тестирование метода Вилфа
+add_executable(wilf_roots_test
+    tests/wilf_roots_test.cpp )
 
+target_link_libraries(wilf_roots_test PRIVATE PrecisionSource)
+
+target_include_directories(wilf_roots_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/precisionSource
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods
+    ${CMAKE_CURRENT_SOURCE_DIR}/Polynomial
+)
+
+add_test(NAME wilf_roots_test COMMAND wilf_roots_test)
+
+# Тестирование метода цепных дробей
+add_executable(continued_fractions_test
+    tests/continued_fractions_test.cpp )
+
+target_link_libraries(continued_fractions_test PRIVATE PrecisionSource)
+
+target_include_directories(continued_fractions_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/precisionSource
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods
+    ${CMAKE_CURRENT_SOURCE_DIR}/Polynomial
+)
+
+add_test(NAME continued_fractions_test COMMAND continued_fractions_test)
+
+# Тестирование метода Берстоу
+add_executable(bairstow_roots_test
+    tests/bairstow_roots_test.cpp )
+
+target_link_libraries(bairstow_roots_test PRIVATE PrecisionSource)
+
+target_include_directories(bairstow_roots_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/precisionSource
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods
+    ${CMAKE_CURRENT_SOURCE_DIR}/Polynomial
+)
+
+add_test(NAME bairstow_roots_test COMMAND bairstow_roots_test)
+
+# Тестирование метода Дженкинса-Трауба
+add_executable(jenkins_traub_roots_test
+    tests/jenkins_traub_roots_test.cpp )
+
+target_link_libraries(jenkins_traub_roots_test PRIVATE PrecisionSource)
+
+target_include_directories(jenkins_traub_roots_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/precisionSource
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods
+    ${CMAKE_CURRENT_SOURCE_DIR}/Polynomial
+)
+
+add_test(NAME jenkins_traub_roots_test COMMAND jenkins_traub_roots_test)
+
+# Тестирование метода Юркша (модификация Грефе)
+add_executable(graeffe_jurchse_test
+    tests/graeffe_jurchse_test.cpp )
+
+target_link_libraries(graeffe_jurchse_test PRIVATE PrecisionSource)
+
+target_include_directories(graeffe_jurchse_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/precisionSource
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods
+    ${CMAKE_CURRENT_SOURCE_DIR}/Polynomial
+)
+
+add_test(NAME graeffe_jurchse_test COMMAND graeffe_jurchse_test)
+
+# Тестирование метода Сан-Хуана (модификация Грефе)
+add_executable(graeffe_sanjuan_test
+    tests/graeffe_sanjuan_test.cpp )
+
+target_link_libraries(graeffe_sanjuan_test PRIVATE PrecisionSource)
+
+target_include_directories(graeffe_sanjuan_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/precisionSource
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods
+    ${CMAKE_CURRENT_SOURCE_DIR}/Polynomial
+)
+
+add_test(NAME graeffe_sanjuan_test COMMAND graeffe_sanjuan_test)
 
 # Подключаем подпроект Polynomial
 add_subdirectory(Polynomial)
