@@ -2,6 +2,8 @@
 // Степени 5-100, вещ./компл./кластериз./кратные, double/long double/float_precision
 // Результаты -> .txt
 
+// Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
