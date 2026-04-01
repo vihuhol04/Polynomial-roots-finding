@@ -3,6 +3,8 @@
 // CIsolate работает с long double по умолчанию; float_precision не поддерживается
 // Результаты -> .txt
 
+// Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
