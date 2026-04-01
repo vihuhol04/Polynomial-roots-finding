@@ -1,6 +1,4 @@
-﻿// Метод Уилфа для поиска корней многочленов
-
-#pragma once
+﻿#pragma once
 
 #include <algorithm>
 #include <array>

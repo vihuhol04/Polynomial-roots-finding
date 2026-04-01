@@ -1,19 +1,18 @@
 // Вспомогательные функции для метода Дженкинса-Трауба (CPOLY)
 // Комплексный Горнер, комплексная дефляция, вычисление P(z) и P'(z)
-// Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
+// Поддерживает произвольную точность через mathUtils (float_precision и др.)
 
 #pragma once
 
-#include <cmath>
 #include <complex>
 #include <cstddef>
 #include <vector>
 
 #include "NumericConcepts.h"
+#include "mathUtils.h"
 
 namespace cpoly_detail {
 
-// Вычисление P(z) по схеме Горнера для комплексного полинома (ascending порядок)
 template <typename T>
 std::complex<T> horner_eval(const std::vector<std::complex<T>> &coeffs,
                             const std::complex<T> &z) {
@@ -24,7 +23,6 @@ std::complex<T> horner_eval(const std::vector<std::complex<T>> &coeffs,
 	return result;
 }
 
-// Одновременное вычисление P(z) и P'(z) по схеме Горнера
 template <typename T>
 std::pair<std::complex<T>, std::complex<T>>
 horner_eval_and_deriv(const std::vector<std::complex<T>> &coeffs,
@@ -40,8 +38,6 @@ horner_eval_and_deriv(const std::vector<std::complex<T>> &coeffs,
 	return {p, dp};
 }
 
-// Дефляция комплексного полинома: P(z) / (z - alpha) по схеме Горнера
-// Коэффициенты в ascending порядке
 template <typename T>
 std::vector<std::complex<T>>
 complex_deflate(const std::vector<std::complex<T>> &coeffs,
@@ -57,7 +53,6 @@ complex_deflate(const std::vector<std::complex<T>> &coeffs,
 	return result;
 }
 
-// Преобразование вещественных коэффициентов в комплексные
 template <typename T>
 std::vector<std::complex<T>>
 to_complex(const std::vector<T> &real_coeffs) {

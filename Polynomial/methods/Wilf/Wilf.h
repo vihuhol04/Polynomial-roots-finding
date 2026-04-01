@@ -3,7 +3,6 @@
 // рекурсивное разбиение прямоугольников и последовательности Штурма.
 // Оригинальная реализация: wilf_root_finder.hpp (C++17, header-only)
 // Интеграция: автоматическая генерация
-// Реализация надстройки: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
 
 #pragma once
 
@@ -31,7 +30,8 @@ template <typename T>
 std::vector<std::complex<T>>
 find_roots_by_Wilf(const std::vector<T> &coeffs, T eps) {
 	static_assert(std::is_floating_point_v<T>,
-		"find_roots_by_Wilf поддерживает только float, double или long double");
+		"find_roots_by_Wilf поддерживает только float, double или long double. "
+		"Для повышенной точности используйте find_roots_by_Bairstow или find_roots_by_JenkinsTraub.");
 
 	if (coeffs.size() < 2)
 		return {};
@@ -58,7 +58,8 @@ template <typename T>
 std::vector<wilf::RootBox<T>>
 localize_roots_by_Wilf(const std::vector<T> &coeffs, T eps) {
 	static_assert(std::is_floating_point_v<T>,
-		"localize_roots_by_Wilf поддерживает только float, double или long double");
+		"localize_roots_by_Wilf поддерживает только float, double или long double. "
+		"Для повышенной точности используйте find_roots_by_Bairstow или find_roots_by_JenkinsTraub.");
 
 	if (coeffs.size() < 2)
 		return {};

@@ -1,7 +1,6 @@
 // Метод Берстоу для нахождения всех корней полинома с вещественными коэффициентами
 // Итеративно извлекает квадратичные множители (x^2 - r*x - s) через
-// двойное синтетическое деление и ньютоновскую коррекцию системы 2x2
-// Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
+// двойное синтетическое деление и ньютоновскую коррекцию системы 2x2.
 
 #pragma once
 
@@ -142,13 +141,13 @@ find_roots_by_Bairstow(const std::vector<T> &input_coeffs,
 				pz = pz * root + std::complex<T>(input_coeffs[k], T(0));
 			}
 
-			if (std::abs(dpz) < eps)
+			if (abs_val(dpz) < eps)
 				break;
 
 			std::complex<T> correction = pz / dpz;
 			root -= correction;
 
-			if (std::abs(correction) < eps * std::max(T(1), std::abs(root)))
+			if (abs_val(correction) < eps * max_val(T(1), abs_val(root)))
 				break;
 		}
 	}

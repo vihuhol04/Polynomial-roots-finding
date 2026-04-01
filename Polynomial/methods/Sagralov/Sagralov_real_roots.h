@@ -699,7 +699,7 @@ int detail::checkRootMultiplicity(const std::vector<T>& poly, T root, T eps) {
 	T scale = max_val(T(1), maxc);
 	auto near_zero = [&](T v, int ord) {
 		T a = abs_val(v);
-		T thr = T(eps) * scale * pow_val(T(1.7), ord);
+		T thr = T(eps) * scale * pow_val(T(1.7), T(ord));
 		return a < thr;
 		};
 	if (!near_zero(eval_poly(poly, root), 0))
