@@ -3,6 +3,8 @@
 // (Wilf не поддерживает float_precision — static_assert is_floating_point)
 // Результаты -> .txt
 
+// Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
