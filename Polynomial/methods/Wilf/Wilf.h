@@ -4,6 +4,8 @@
 // Оригинальная реализация: wilf_root_finder.hpp (C++17, header-only)
 // Интеграция: автоматическая генерация
 
+// Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
+
 #pragma once
 
 #include <complex>
