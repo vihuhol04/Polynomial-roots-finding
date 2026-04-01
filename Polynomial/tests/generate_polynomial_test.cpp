@@ -1,7 +1,7 @@
-#include <iomanip>
 // Полный набор тестов для генератора многочленов
 // Реализация: Павлова Анастасия, КМБО-01-22
 
+#include <iomanip>
 #include "generate_high_degree_polynomial.h"
 #include <cassert>
 #include <cmath>
