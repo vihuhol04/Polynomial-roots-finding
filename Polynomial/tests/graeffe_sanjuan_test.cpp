@@ -3,6 +3,8 @@
 // Типы: double, long double, float_precision
 // Результаты сохраняются в .txt файлы
 
+// Реализация: Павлова Анастасия, КМБО-01-22 vihuhol04@mail.ru
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
