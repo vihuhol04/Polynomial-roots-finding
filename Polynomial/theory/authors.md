@@ -12,6 +12,9 @@
 ## C-Poly.pdf
 - **Автор**: Семенидо Алина, КМБО-06-22, [lina.semenido@yandex.ru](mailto:lina.semenido@yandex.ru)
 
+## CISOLATE.pdf
+- **Автор**: Семенидо Алина, КМБО-06-22, [lina.semenido@yandex.ru](mailto:lina.semenido@yandex.ru)
+
 ## Continued_Fractions.pdf
 - **Автор**: Семенидо Алина, КМБО-06-22, [lina.semenido@yandex.ru](mailto:lina.semenido@yandex.ru)
 
